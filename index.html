@@ -758,13 +758,19 @@ function countAllNotes(data) {
 function renderPreviewStats() {
   const data = parsedData;
   const bpm = data.bpm;
+  const npb = data.npb || 4;
+  const secPerNote = (60 / bpm) / npb;
   const totalNotes = countAllNotes(data);
-  const allNotes = getAllNotesFlat(data);
-  const maxTime = allNotes.length ? Math.max(...allNotes.map(n => n.time)) : 0;
+
+  let maxSec = 0;
+  for (const section of data.strumLines)
+    for (const lane of section)
+      for (const note of lane)
+        if (note.start * secPerNote > maxSec) maxSec = note.start * secPerNote;
 
   document.getElementById('iBpm').textContent = bpm;
   document.getElementById('iNotes').textContent = totalNotes;
-  document.getElementById('iDuration').textContent = maxTime.toFixed(1);
+  document.getElementById('iDuration').textContent = maxSec.toFixed(1);
   document.getElementById('iLanes').textContent = data.strumLines[0].length;
   document.getElementById('infoBar').classList.add('show');
 
