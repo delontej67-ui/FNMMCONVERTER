@@ -1030,11 +1030,10 @@
         <span>↓</span> Scroll to the bottom to enable OK
       </div>
       <div class="tos-btn-row">
-        <label class="tos-dont-show" id="tosDontShow" onclick="toggleDontShow()">
-          <input type="checkbox" id="tosDontShowCheck">
-          <span class="tos-checkbox"></span>
+        <div class="tos-dont-show" id="tosDontShow" onclick="toggleDontShow()">
+          <span class="tos-checkbox" id="tosCheckbox"></span>
           <span class="tos-dont-show-label">Don't show again</span>
-        </label>
+        </div>
         <button class="tos-ok-btn" id="tosOkBtn" onclick="closeTos()" disabled>
           ✓ I Agree &amp; Continue
         </button>
@@ -1597,20 +1596,24 @@ function syntaxHighlight(json) {
   setTimeout(onTosScroll, 100);
 })();
 
+let tosDontShowChecked = false;
+
 function toggleDontShow() {
-  const label = document.getElementById('tosDontShow');
-  label.classList.toggle('checked');
+  tosDontShowChecked = !tosDontShowChecked;
+  const box = document.getElementById('tosDontShow');
+  const chk = document.getElementById('tosCheckbox');
+  box.classList.toggle('checked', tosDontShowChecked);
+  chk.style.background    = tosDontShowChecked ? 'var(--blue)' : '';
+  chk.style.borderColor   = tosDontShowChecked ? 'var(--blue)' : '';
 }
 
 function closeTos() {
-  const overlay = document.getElementById('tosOverlay');
-  const dontShow = document.getElementById('tosDontShow');
-  if (dontShow.classList.contains('checked')) {
+  if (tosDontShowChecked) {
     localStorage.setItem('fnmm_tos_accepted', 'true');
   }
-  overlay.style.animation = 'none';
-  overlay.style.opacity   = '0';
+  const overlay = document.getElementById('tosOverlay');
   overlay.style.transition = 'opacity 0.2s ease';
+  overlay.style.opacity    = '0';
   setTimeout(() => overlay.classList.add('hidden'), 200);
 }
 
