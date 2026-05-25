@@ -554,21 +554,6 @@
       <span>Output Format</span>
     </div>
     <div class="panel-body">
-      <div class="format-grid">
-        <div class="format-card vslice selected" id="cardVslice" onclick="selectFormat('vslice')">
-          <div class="check">✓</div>
-          <span class="format-icon">🌊</span>
-          <div class="format-name">V-Slice / FNF 0.3</div>
-          <div class="format-desc">Modern FNF format · Compatible with the official rewrite engine (HaxeFlixel)</div>
-        </div>
-        <div class="format-card physics" id="cardPhysics" onclick="selectFormat('physics')">
-          <div class="check">✓</div>
-          <span class="format-icon">⚡</span>
-          <div class="format-name">Physics Engine</div>
-          <div class="format-desc">FNF Physics / Psych Engine legacy format · JSON note arrays with ms timing</div>
-        </div>
-      </div>
-
       <div class="config-row">
         <div class="field">
           <label>Song Title</label>
@@ -627,16 +612,7 @@
 <script>
 // ─── State ────────────────────────────────────────────────────────────────────
 let parsedData = null;
-let selectedFormat = 'vslice';
 let outputJSON = null;
-
-// ─── Format Selection ─────────────────────────────────────────────────────────
-function selectFormat(fmt) {
-  selectedFormat = fmt;
-  document.getElementById('cardVslice').classList.toggle('selected', fmt === 'vslice');
-  document.getElementById('cardPhysics').classList.toggle('selected', fmt === 'physics');
-  if (parsedData) renderPreviewStats();
-}
 
 // ─── File Handling ────────────────────────────────────────────────────────────
 const dropzone = document.getElementById('dropzone');
@@ -782,30 +758,6 @@ function renderPreviewStats() {
 }
 
 // ─── Conversion ────────────────────────────────────────────────────────────────
-function getAllNotesFlat(data) {
-  // strumLines: array of sections, each section is array of 4 lanes (columns 0-3)
-  // Each lane has notes with {start: beats, duration: beats}
-  const bpm = data.bpm;
-  const npb = data.npb || 4; // notes per beat
-  const secPerBeat = 60 / bpm;
-  const secPerNote = secPerBeat / npb;
-
-  const notes = [];
-  for (const section of data.strumLines) {
-    for (let lane = 0; lane < section.length; lane++) {
-      for (const note of section[lane]) {
-        notes.push({
-          time: note.start * secPerNote * 1000, // ms
-          lane: lane, // 0=left,1=down,2=up,3=right
-          duration: note.duration * secPerNote * 1000,
-          skin: note.props?.skin || 0
-        });
-      }
-    }
-  }
-  notes.sort((a, b) => a.time - b.time);
-  return notes;
-}
 
 function convertChart() {
   if (!parsedData) return;
@@ -814,196 +766,53 @@ function convertChart() {
   const artist = document.getElementById('songArtist').value || 'unknown';
   const diff = document.getElementById('diffTag').value;
   const speed = parseFloat(document.getElementById('scrollSpeed').value) || 2.5;
-  const notes = getAllNotesFlat(parsedData);
 
-  let result;
-  if (selectedFormat === 'vslice') {
-    result = convertToVSlice(parsedData, notes, title, artist, diff, speed);
-  } else {
-    result = convertToPhysics(parsedData, notes, title, artist, diff, speed);
-  }
+  const result = convertToVSlice(parsedData, title, diff, speed);
 
   outputJSON = result;
   const formatted = JSON.stringify(result, null, 2);
   document.getElementById('outputCode').innerHTML = syntaxHighlight(formatted);
-  document.getElementById('outputTitle').textContent = `OUTPUT — ${selectedFormat.toUpperCase()}`;
+  document.getElementById('outputTitle').textContent = 'OUTPUT — VSLICE CHART';
   document.getElementById('outputSection').classList.add('show');
   document.getElementById('outputSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ─── V-Slice Format ───────────────────────────────────────────────────────────
-function convertToVSlice(data, notes, title, artist, diff, speed) {
+// Matches exact output of the Python converter:
+// { version, generatedBy, scrollSpeed, events: [FocusCamera], notes: { diff: [ {t,d,l,p} ] } }
+function convertToVSlice(data, title, diff, speed) {
   const bpm = data.bpm;
-  const songId = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  const npb = data.npb || 4;
+  const secPerBeat = 60 / bpm;
+  const secPerNote = secPerBeat / npb;
 
-  // Group notes into measures
-  const measures = buildVSliceMeasures(data, bpm);
+  // Flatten all notes from all strum line sections → {t(ms), d(0-3), l(ms), p:[]}
+  // strumLines is an array of "sections"; each section is an array of 4 lane arrays
+  // lane index = direction: 0=left, 1=down, 2=up, 3=right
+  const flatNotes = [];
+  for (const section of data.strumLines) {
+    for (let lane = 0; lane < section.length; lane++) {
+      const dir = lane % 4; // direction 0-3
+      for (const note of section[lane]) {
+        const t = Math.round(note.start * secPerNote * 1000);
+        const l = note.duration > 0 ? Math.round(note.duration * secPerNote * 1000) : 0;
+        flatNotes.push({ t, d: dir, l, p: [] });
+      }
+    }
+  }
+
+  // Sort by time ascending
+  flatNotes.sort((a, b) => a.t - b.t || a.d - b.d);
 
   return {
     version: "2.0.0",
-    songName: title,
-    artist: artist,
-    charter: "FNMobile Converter",
-    generatedBy: "FNMM Chart Converter",
-    timeChanges: [{ t: 0, bpm: bpm, n: 4, d: 4, bt: [4, 4, 4, 4] }],
-    looped: false,
-    offsets: { instrumental: 0, altInstrumental: 0, vocals: {} },
-    playData: {
-      characters: {
-        player: "boyfriend",
-        girlfriend: "gf",
-        opponent: "dad"
-      },
-      difficulties: [diff],
-      noteStyle: "funkin",
-      stage: "mainStage",
-      ratings: {},
-      scrollSpeed: { [diff]: speed }
-    },
+    generatedBy: "ConvertedFromFNMM",
+    scrollSpeed: { [diff]: speed },
+    events: [
+      { t: 0, e: "FocusCamera", v: { char: 0 } }
+    ],
     notes: {
-      [diff]: measures
-    },
-    events: []
-  };
-}
-
-function buildVSliceMeasures(data, bpm) {
-  const npb = data.npb || 4;
-  const secPerBeat = 60 / bpm;
-  const secPerNote = secPerBeat / npb;
-  const beatsPerMeasure = 4;
-  const stepsPerMeasure = 16;
-  const secPerMeasure = secPerBeat * beatsPerMeasure;
-
-  const allNotesByLane = {};
-  for (const section of data.strumLines) {
-    for (let lane = 0; lane < section.length; lane++) {
-      if (!allNotesByLane[lane]) allNotesByLane[lane] = [];
-      for (const note of section[lane]) {
-        allNotesByLane[lane].push({
-          time: note.start * secPerNote * 1000,
-          duration: note.duration > 0 ? note.duration * secPerNote * 1000 : 0
-        });
-      }
-    }
-  }
-
-  // Find total measures
-  let maxTime = 0;
-  for (const lane of Object.values(allNotesByLane)) {
-    for (const n of lane) maxTime = Math.max(maxTime, n.time);
-  }
-  const numMeasures = Math.ceil(maxTime / (secPerMeasure * 1000)) + 1;
-
-  const measures = [];
-  for (let m = 0; m < numMeasures; m++) {
-    const measureStart = m * secPerMeasure * 1000;
-    const measureEnd = measureStart + secPerMeasure * 1000;
-    const noteRows = [];
-    const mustHitSection = true; // player section by default
-
-    // 4 lanes: 0-3 = opponent, 4-7 = player in VSlice
-    for (let lane = 0; lane < 4; lane++) {
-      const srcLane = allNotesByLane[lane] || [];
-      for (const note of srcLane) {
-        if (note.time >= measureStart && note.time < measureEnd) {
-          const t = note.time - measureStart;
-          // In FNMobile, lanes 0-3 are one strum line; we split by section parity
-          // strumLines[0] = player (lanes 0-3), strumLines[1] = enemy (lanes 4-7)
-          const direction = lane; // 0=left,1=down,2=up,3=right
-          noteRows.push({ t: Math.round(note.time), d: direction, l: Math.round(note.duration), k: "" });
-        }
-      }
-    }
-
-    if (noteRows.length > 0) {
-      measures.push({ t: Math.round(measureStart), n: noteRows, e: [] });
-    }
-  }
-
-  // Also handle enemy notes (strum line index 1 mapped to directions 4-7)
-  for (let m = 0; m < numMeasures; m++) {
-    const measureStart = m * secPerMeasure * 1000;
-    const findMeasure = measures.find(x => x.t === Math.round(measureStart));
-    for (let sl = 1; sl < data.strumLines[0].length; sl++) {
-      // Already handled above — the loop covers lanes 0-3 from the FIRST section group
-    }
-  }
-
-  return measures;
-}
-
-// ─── Physics / Psych Engine Format ───────────────────────────────────────────
-function convertToPhysics(data, notes, title, artist, diff, speed) {
-  const bpm = data.bpm;
-  const npb = data.npb || 4;
-  const secPerBeat = 60 / bpm;
-  const secPerNote = secPerBeat / npb;
-  const beatsPerSec = bpm / 60;
-  const stepCrochet = (60 / bpm / npb) * 1000;
-
-  // Build sections (16 steps each)
-  const stepsPerSection = 16;
-  const msPerSection = stepCrochet * stepsPerSection;
-
-  // Flatten all notes with ms times + directions
-  const allNotes = [];
-  for (const section of data.strumLines) {
-    for (let lane = 0; lane < section.length; lane++) {
-      for (const note of section[lane]) {
-        const ms = note.start * secPerNote * 1000;
-        const durMs = note.duration > 0 ? note.duration * secPerNote * 1000 : 0;
-        // Determine player vs opponent:
-        // In FNMobile, strumLine[0] = first strum (player), [1] = second (opponent in FNF terms)
-        // FNF Psych: 0-3 = opponent, 4-7 = player
-        // The .fnmm has strumLines[0] with 4 lanes (the section) containing notes for player strums
-        // We'll map first half of lanes to player (4-7) and second to opponent (0-3)
-        const isPlayer = lane < 4; // assume first 4 lanes = player side
-        const dir = lane % 4; // 0=left,1=down,2=up,3=right
-        const fnfLane = isPlayer ? dir + 4 : dir; // Psych format
-        allNotes.push([ms, fnfLane, durMs > 0 ? durMs : 0, false]);
-      }
-    }
-  }
-
-  allNotes.sort((a, b) => a[0] - b[0]);
-
-  // Build sections
-  const maxMs = allNotes.length ? Math.max(...allNotes.map(n => n[0])) : 0;
-  const numSections = Math.ceil(maxMs / msPerSection) + 1;
-  const sections = [];
-
-  for (let s = 0; s < numSections; s++) {
-    const sStart = s * msPerSection;
-    const sEnd = sStart + msPerSection;
-    const sNotes = allNotes.filter(n => n[0] >= sStart && n[0] < sEnd);
-    const mustHitSection = sNotes.some(n => n[1] >= 4); // has player notes
-
-    sections.push({
-      lengthInSteps: stepsPerSection,
-      mustHitSection: mustHitSection,
-      typeOfSection: 0,
-      altAnim: false,
-      sectionNotes: sNotes.map(n => [Math.round(n[0]), n[1], Math.round(n[2])]),
-      changeBPM: false,
-      bpm: bpm
-    });
-  }
-
-  return {
-    song: {
-      song: title,
-      notes: sections,
-      events: [],
-      bpm: bpm,
-      needsVoices: true,
-      speed: speed,
-      player1: "bf",
-      player2: "dad",
-      gfVersion: "gf",
-      stage: "stage",
-      arrowSkin: "",
-      validScore: true
+      [diff]: flatNotes
     }
   };
 }
@@ -1011,9 +820,8 @@ function convertToPhysics(data, notes, title, artist, diff, speed) {
 // ─── Download ─────────────────────────────────────────────────────────────────
 function downloadJSON() {
   if (!outputJSON) return;
-  const title = (document.getElementById('songTitle').value || 'chart').toLowerCase().replace(/\s+/g, '-');
-  const diff = document.getElementById('diffTag').value;
-  const fname = `${title}-${diff}-${selectedFormat}.json`;
+  const title = (document.getElementById('songTitle').value || 'chart').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  const fname = `${title}-chart.json`;
   const blob = new Blob([JSON.stringify(outputJSON, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
