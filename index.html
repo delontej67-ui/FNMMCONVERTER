@@ -3,570 +3,655 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FNMM Chart Converter</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<title>FNMM → V-Slice Chart Converter</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0a0a0f;
-    --surface: #111118;
-    --surface2: #18181f;
-    --border: #2a2a3a;
-    --accent: #ff3d6e;
-    --accent2: #7b2fff;
-    --accent3: #00e5ff;
-    --text: #e8e8f0;
-    --muted: #666680;
-    --green: #00ff88;
-    --yellow: #ffcc00;
-    --left: #ff6b6b;
-    --down: #7bff6b;
-    --up: #6b9fff;
-    --right: #ff6bff;
-  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:        #f4f6f9;
+    --white:     #ffffff;
+    --border:    #dde1e8;
+    --border2:   #c8cdd6;
+    --blue:      #2563eb;
+    --blue-dark: #1d4ed8;
+    --blue-light:#eff6ff;
+    --blue-mid:  #dbeafe;
+    --text:      #111827;
+    --text2:     #374151;
+    --muted:     #6b7280;
+    --muted2:    #9ca3af;
+    --green:     #16a34a;
+    --green-bg:  #f0fdf4;
+    --green-bdr: #bbf7d0;
+    --red:       #dc2626;
+    --red-bg:    #fef2f2;
+    --red-bdr:   #fecaca;
+    --note-l:    #ef4444;
+    --note-d:    #22c55e;
+    --note-u:    #3b82f6;
+    --note-r:    #a855f7;
+    --radius:    10px;
+    --shadow:    0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.04);
+  }
 
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: 'Space Mono', monospace;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
     min-height: 100vh;
-    overflow-x: hidden;
   }
 
-  /* Animated grid background */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(123,47,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(123,47,255,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
+  /* ── Top Bar ── */
+  .topbar {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   }
 
-  .glow-orb {
-    position: fixed;
-    border-radius: 50%;
-    filter: blur(120px);
-    pointer-events: none;
-    z-index: 0;
-  }
-  .glow-orb.a { width: 500px; height: 500px; background: rgba(255,61,110,0.07); top: -100px; left: -100px; }
-  .glow-orb.b { width: 400px; height: 400px; background: rgba(123,47,255,0.08); bottom: -80px; right: -80px; }
-  .glow-orb.c { width: 300px; height: 300px; background: rgba(0,229,255,0.05); top: 50%; left: 50%; transform: translate(-50%,-50%); }
-
-  .container {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 40px 24px 80px;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Header */
-  header {
-    text-align: center;
-    margin-bottom: 60px;
-    position: relative;
-  }
-
-  .logo-badge {
-    display: inline-block;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: white;
-    font-size: 10px;
+  .topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-weight: 700;
-    letter-spacing: 3px;
-    padding: 4px 14px;
+    font-size: 15px;
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .topbar-brand .brand-icon {
+    width: 30px; height: 30px;
+    background: var(--blue);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    color: white;
+    font-size: 15px;
+  }
+
+  .topbar-badge {
+    background: var(--blue-mid);
+    color: var(--blue);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
     border-radius: 20px;
-    text-transform: uppercase;
-    margin-bottom: 20px;
+    border: 1px solid #bfdbfe;
   }
 
-  h1 {
-    font-family: 'Syne', sans-serif;
-    font-size: clamp(2.2rem, 6vw, 3.8rem);
-    font-weight: 800;
-    line-height: 1.05;
-    margin-bottom: 14px;
-    background: linear-gradient(135deg, #fff 30%, var(--accent3));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  /* ── Layout ── */
+  .page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 36px 20px 80px;
   }
 
-  header p {
-    color: var(--muted);
-    font-size: 13px;
-    letter-spacing: 0.5px;
-    line-height: 1.6;
-  }
-
-  /* Drop zone */
-  .dropzone {
-    border: 2px dashed var(--border);
-    border-radius: 16px;
-    padding: 52px 32px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background: var(--surface);
-    position: relative;
-    overflow: hidden;
+  /* ── Page Header ── */
+  .page-header {
     margin-bottom: 28px;
   }
 
-  .dropzone::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,61,110,0.04), rgba(123,47,255,0.04));
-    opacity: 0;
-    transition: opacity 0.3s;
+  .page-header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .page-header p {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .vslice-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--blue);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fafbfc;
+  }
+
+  .card-header .step {
+    width: 22px; height: 22px;
+    background: var(--blue);
+    color: white;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .card-header .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .card-header .card-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  .card-body { padding: 20px; }
+
+  /* ── Drop Zone ── */
+  .dropzone {
+    border: 2px dashed var(--border2);
+    border-radius: 8px;
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: #fafbfc;
   }
 
   .dropzone:hover, .dropzone.drag-over {
-    border-color: var(--accent);
-    box-shadow: 0 0 30px rgba(255,61,110,0.15);
+    border-color: var(--blue);
+    background: var(--blue-light);
   }
-
-  .dropzone:hover::before, .dropzone.drag-over::before { opacity: 1; }
 
   .dropzone input { display: none; }
 
   .drop-icon {
-    font-size: 48px;
-    margin-bottom: 16px;
+    font-size: 36px;
     display: block;
-    filter: drop-shadow(0 0 10px rgba(255,61,110,0.4));
+    margin-bottom: 12px;
+    color: var(--muted2);
   }
 
-  .dropzone h2 {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.15rem;
-    font-weight: 700;
-    margin-bottom: 8px;
-    color: var(--text);
+  .dropzone h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text2);
+    margin-bottom: 4px;
   }
 
-  .dropzone p { color: var(--muted); font-size: 12px; }
+  .dropzone .drop-hint {
+    font-size: 12px;
+    color: var(--muted);
+  }
 
+  .dropzone .drop-hint span {
+    color: var(--blue);
+    font-weight: 500;
+    text-decoration: underline;
+  }
+
+  /* ── File accepted ── */
   .file-accepted {
     display: none;
     align-items: center;
-    gap: 14px;
-    background: rgba(0,255,136,0.06);
-    border: 1px solid rgba(0,255,136,0.2);
-    border-radius: 10px;
-    padding: 14px 18px;
-    margin-top: 16px;
-    font-size: 12px;
+    gap: 12px;
+    background: var(--green-bg);
+    border: 1px solid var(--green-bdr);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-top: 12px;
   }
 
   .file-accepted.show { display: flex; }
-  .file-accepted .fname { color: var(--green); font-weight: 700; }
-  .file-accepted .fmeta { color: var(--muted); }
 
-  /* Config Panel */
-  .panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-    margin-bottom: 20px;
+  .file-check {
+    width: 28px; height: 28px;
+    background: var(--green);
+    border-radius: 50%;
+    color: white;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
   }
 
-  .panel-header {
-    padding: 16px 24px;
-    background: var(--surface2);
-    border-bottom: 1px solid var(--border);
+  .file-accepted .fname { font-weight: 600; color: var(--green); font-size: 13px; }
+  .file-accepted .fmeta { font-size: 11px; color: var(--muted); }
+
+  /* ── Info cards ── */
+  .info-grid {
+    display: none;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .info-grid.show { display: grid; }
+
+  .info-tile {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .info-tile .val {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--blue);
+    line-height: 1.2;
+  }
+
+  .info-tile .lbl {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* ── Lane bars ── */
+  .lane-section {
+    display: none;
+    margin-top: 14px;
+  }
+
+  .lane-section.show { display: block; }
+
+  .lane-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .lane-rows { display: flex; flex-direction: column; gap: 5px; }
+
+  .lane-row {
     display: flex;
     align-items: center;
     gap: 10px;
   }
 
-  .panel-header .dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 8px var(--accent);
-  }
-
-  .panel-header span {
+  .lane-row .lane-name {
     font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--muted);
+    font-weight: 600;
+    width: 36px;
+    text-align: right;
+    flex-shrink: 0;
   }
 
-  .panel-body { padding: 24px; }
-
-  /* Format Selector */
-  .format-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 24px;
-  }
-
-  .format-card {
-    border: 2px solid var(--border);
-    border-radius: 12px;
-    padding: 18px;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    background: var(--surface2);
-    position: relative;
+  .lane-track {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
     overflow: hidden;
   }
 
-  .format-card::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    transition: opacity 0.25s;
+  .lane-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+    width: 0%;
   }
 
-  .format-card.vslice::after { background: linear-gradient(135deg, rgba(0,229,255,0.07), transparent); }
-  .format-card.physics::after { background: linear-gradient(135deg, rgba(255,204,0,0.07), transparent); }
+  .lane-row:nth-child(1) .lane-name { color: var(--note-l); }
+  .lane-row:nth-child(2) .lane-name { color: var(--note-d); }
+  .lane-row:nth-child(3) .lane-name { color: var(--note-u); }
+  .lane-row:nth-child(4) .lane-name { color: var(--note-r); }
+  .lane-row:nth-child(1) .lane-fill { background: var(--note-l); }
+  .lane-row:nth-child(2) .lane-fill { background: var(--note-d); }
+  .lane-row:nth-child(3) .lane-fill { background: var(--note-u); }
+  .lane-row:nth-child(4) .lane-fill { background: var(--note-r); }
 
-  .format-card.selected.vslice { border-color: var(--accent3); box-shadow: 0 0 20px rgba(0,229,255,0.15); }
-  .format-card.selected.physics { border-color: var(--yellow); box-shadow: 0 0 20px rgba(255,204,0,0.15); }
-  .format-card.selected::after { opacity: 1; }
-
-  .format-card .format-icon { font-size: 28px; margin-bottom: 10px; display: block; }
-  .format-card .format-name {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.95rem;
-    font-weight: 700;
-    margin-bottom: 4px;
+  .lane-count {
+    font-size: 11px;
+    color: var(--muted);
+    width: 28px;
+    text-align: right;
+    flex-shrink: 0;
   }
-  .format-card.vslice .format-name { color: var(--accent3); }
-  .format-card.physics .format-name { color: var(--yellow); }
 
-  .format-card .format-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
-
-  .format-card .check {
-    position: absolute;
-    top: 12px; right: 12px;
-    width: 20px; height: 20px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 10px;
-    transition: all 0.2s;
-  }
-  .format-card.selected.vslice .check { background: var(--accent3); border-color: var(--accent3); color: #000; }
-  .format-card.selected.physics .check { background: var(--yellow); border-color: var(--yellow); color: #000; }
-
-  /* Config rows */
-  .config-row {
+  /* ── Form fields ── */
+  .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 14px;
-    margin-bottom: 14px;
   }
 
+  .form-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+
   .field label {
-    display: block;
-    font-size: 10px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
   }
 
   .field input, .field select {
-    width: 100%;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    color: var(--text);
-    font-family: 'Space Mono', monospace;
+    background: var(--white);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: inherit;
     font-size: 13px;
+    color: var(--text);
     outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition: border-color 0.15s, box-shadow 0.15s;
     -webkit-appearance: none;
   }
 
   .field input:focus, .field select:focus {
-    border-color: var(--accent2);
-    box-shadow: 0 0 0 3px rgba(123,47,255,0.1);
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
   }
 
-  .field select option { background: var(--bg); }
+  .field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
 
-  /* Info cards */
-  .info-bar {
-    display: none;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-
-  .info-bar.show { display: grid; }
-
-  .info-card {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
+  /* ── V-Slice info banner ── */
+  .vslice-info {
+    background: var(--blue-light);
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
     padding: 12px 16px;
-    text-align: center;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 16px;
   }
 
-  .info-card .ivalue {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.4rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, var(--accent3), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
+  .vslice-info .vi-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
 
-  .info-card .ilabel { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+  .vslice-info .vi-text { font-size: 12px; color: #1e40af; line-height: 1.5; }
+  .vslice-info .vi-text strong { font-weight: 600; }
 
-  /* Note lane preview */
-  .lane-preview {
-    display: none;
-    gap: 6px;
-    margin-bottom: 20px;
-    align-items: center;
-  }
-  .lane-preview.show { display: flex; }
-  .lane-preview .lane-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-right: 6px; }
-
-  .lane-bar {
-    height: 8px;
-    border-radius: 4px;
-    flex: 1;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .lane-bar .fill {
-    height: 100%;
-    border-radius: 4px;
-    position: absolute;
-    left: 0; top: 0;
-    transition: width 0.5s ease;
-  }
-
-  .lane-bar:nth-child(2) .fill { background: var(--left); box-shadow: 0 0 6px var(--left); }
-  .lane-bar:nth-child(3) .fill { background: var(--down); box-shadow: 0 0 6px var(--down); }
-  .lane-bar:nth-child(4) .fill { background: var(--up); box-shadow: 0 0 6px var(--up); }
-  .lane-bar:nth-child(5) .fill { background: var(--right); box-shadow: 0 0 6px var(--right); }
-
-  /* Convert button */
+  /* ── Convert button ── */
   .convert-btn {
     width: 100%;
-    padding: 18px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    padding: 12px;
+    background: var(--blue);
     border: none;
-    border-radius: 12px;
+    border-radius: 8px;
     color: white;
-    font-family: 'Syne', sans-serif;
-    font-size: 1.05rem;
-    font-weight: 800;
-    letter-spacing: 1px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s;
-    position: relative;
-    overflow: hidden;
-    margin-bottom: 14px;
+    transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
   }
 
-  .convert-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
-    opacity: 0;
-    transition: opacity 0.2s;
+  .convert-btn:hover { background: var(--blue-dark); box-shadow: var(--shadow-md); }
+  .convert-btn:active { transform: translateY(1px); }
+  .convert-btn:disabled { background: var(--muted2); cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* ── Error ── */
+  .error-box {
+    display: none;
+    background: var(--red-bg);
+    border: 1px solid var(--red-bdr);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--red);
+    margin-top: 14px;
+    display: none;
+    align-items: center;
+    gap: 8px;
   }
 
-  .convert-btn:hover::before { opacity: 1; }
-  .convert-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(255,61,110,0.35); }
-  .convert-btn:active { transform: translateY(0); }
-  .convert-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+  .error-box.show { display: flex; }
 
-  /* Output */
+  /* ── Output ── */
   .output-section { display: none; }
   .output-section.show { display: block; }
 
-  .output-panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-    margin-top: 20px;
-  }
-
-  .output-header {
-    padding: 14px 24px;
-    background: var(--surface2);
-    border-bottom: 1px solid var(--border);
+  .output-header-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
   }
 
-  .output-header .title-group {
-    display: flex; align-items: center; gap: 10px;
+  .output-status {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--green);
   }
 
-  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: blink 2s infinite;
   }
 
-  .output-header .title { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
   .dl-btn {
-    background: rgba(0,255,136,0.1);
-    border: 1px solid rgba(0,255,136,0.3);
-    color: var(--green);
-    padding: 8px 18px;
-    border-radius: 8px;
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .dl-btn:hover { background: rgba(0,255,136,0.2); box-shadow: 0 0 15px rgba(0,255,136,0.2); }
-
-  .output-code {
-    padding: 24px;
-    font-size: 11.5px;
-    line-height: 1.7;
-    max-height: 480px;
-    overflow-y: auto;
-    color: var(--muted);
-    white-space: pre;
-    overflow-x: auto;
-  }
-
-  .output-code::-webkit-scrollbar { width: 6px; height: 6px; }
-  .output-code::-webkit-scrollbar-track { background: var(--surface2); }
-  .output-code::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-  /* JSON syntax colors */
-  .json-key { color: var(--accent3); }
-  .json-str { color: var(--green); }
-  .json-num { color: var(--yellow); }
-  .json-bool { color: var(--accent); }
-
-  /* Error */
-  .error-box {
-    display: none;
-    background: rgba(255,61,110,0.08);
-    border: 1px solid rgba(255,61,110,0.3);
-    border-radius: 10px;
-    padding: 14px 18px;
+    background: var(--green);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    padding: 7px 16px;
+    font-family: inherit;
     font-size: 12px;
-    color: var(--accent);
-    margin-top: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex; align-items: center; gap: 6px;
   }
-  .error-box.show { display: block; }
 
-  /* Footer */
+  .dl-btn:hover { background: #15803d; }
+
+  .output-meta {
+    display: flex;
+    gap: 16px;
+    margin: 14px 0;
+    flex-wrap: wrap;
+  }
+
+  .output-meta-item {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .output-meta-item strong { color: var(--text2); font-weight: 600; }
+
+  .code-box {
+    background: #1e1e2e;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #2d2d3f;
+  }
+
+  .code-toolbar {
+    background: #2d2d3f;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .code-toolbar .lang {
+    font-size: 11px;
+    font-weight: 600;
+    color: #9ca3af;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .copy-btn {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    color: #9ca3af;
+    font-family: inherit;
+    font-size: 11px;
+    padding: 3px 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .copy-btn:hover { background: rgba(255,255,255,0.12); color: white; }
+
+  pre.output-code {
+    padding: 16px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 11.5px;
+    line-height: 1.65;
+    max-height: 400px;
+    overflow: auto;
+    color: #cdd6f4;
+    white-space: pre;
+  }
+
+  pre.output-code::-webkit-scrollbar { width: 5px; height: 5px; }
+  pre.output-code::-webkit-scrollbar-track { background: #1e1e2e; }
+  pre.output-code::-webkit-scrollbar-thumb { background: #45475a; border-radius: 3px; }
+
+  .json-key  { color: #89b4fa; }
+  .json-str  { color: #a6e3a1; }
+  .json-num  { color: #fab387; }
+  .json-bool { color: #f38ba8; }
+
+  /* ── Footer ── */
   footer {
     text-align: center;
-    padding: 40px 0 0;
-    color: var(--muted);
-    font-size: 11px;
-    letter-spacing: 0.5px;
+    padding: 32px 0 0;
+    font-size: 12px;
+    color: var(--muted2);
   }
 
-  footer span { color: var(--accent); }
-
-  /* Responsive */
-  @media (max-width: 600px) {
-    .format-grid { grid-template-columns: 1fr; }
-    .config-row { grid-template-columns: 1fr; }
-    .info-bar { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 560px) {
+    .form-grid, .form-grid.three { grid-template-columns: 1fr; }
+    .info-grid { grid-template-columns: repeat(2, 1fr); }
   }
 </style>
 </head>
 <body>
 
-<div class="glow-orb a"></div>
-<div class="glow-orb b"></div>
-<div class="glow-orb c"></div>
+<!-- Top Bar -->
+<nav class="topbar">
+  <div class="topbar-brand">
+    <div class="brand-icon">🎵</div>
+    FNMM Converter
+  </div>
+  <div class="topbar-badge">V-Slice Only</div>
+</nav>
 
-<div class="container">
+<div class="page">
 
-  <header>
-    <div class="logo-badge">🎵 FNF Toolkit</div>
-    <h1>FNMM Chart<br>Converter</h1>
-    <p>Drop your <code>.fnmm</code> file and convert it to VSlice or Physics Engine format</p>
-  </header>
-
-  <!-- Drop Zone -->
-  <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
-    <input type="file" id="fileInput" accept=".fnmm">
-    <span class="drop-icon">🎮</span>
-    <h2>Drop your .fnmm file here</h2>
-    <p>or click to browse · Supports FNMobile chart files</p>
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="vslice-tag">🌊 Friday Night Funkin' — V-Slice Format</div>
+    <h1>FNMM → V-Slice Chart Converter</h1>
+    <p>Upload a <code>.fnmm</code> file and convert it to a V-Slice chart JSON ready to use in your mod.</p>
   </div>
 
-  <div class="file-accepted" id="fileAccepted">
-    <span>✓</span>
-    <div>
-      <div class="fname" id="fileName">—</div>
-      <div class="fmeta" id="fileMeta">—</div>
+  <!-- Step 1: Upload -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step">1</div>
+      <span class="card-title">Upload .fnmm File</span>
+    </div>
+    <div class="card-body">
+      <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+        <input type="file" id="fileInput" accept=".fnmm">
+        <span class="drop-icon">📂</span>
+        <h3>Drop your .fnmm file here</h3>
+        <p class="drop-hint">or <span>click to browse</span> · FNMobile chart files only</p>
+      </div>
+
+      <div class="file-accepted" id="fileAccepted">
+        <div class="file-check">✓</div>
+        <div>
+          <div class="fname" id="fileName">—</div>
+          <div class="fmeta" id="fileMeta">—</div>
+        </div>
+      </div>
+
+      <div class="info-grid" id="infoBar">
+        <div class="info-tile"><div class="val" id="iBpm">—</div><div class="lbl">BPM</div></div>
+        <div class="info-tile"><div class="val" id="iNotes">—</div><div class="lbl">Notes</div></div>
+        <div class="info-tile"><div class="val" id="iDuration">—</div><div class="lbl">Seconds</div></div>
+        <div class="info-tile"><div class="val" id="iLanes">—</div><div class="lbl">Lanes</div></div>
+      </div>
+
+      <div class="lane-section" id="laneSection">
+        <div class="lane-section-label">Note Distribution</div>
+        <div class="lane-rows">
+          <div class="lane-row"><span class="lane-name">LEFT</span><div class="lane-track"><div class="lane-fill" id="laneA"></div></div><span class="lane-count" id="lcA">0</span></div>
+          <div class="lane-row"><span class="lane-name">DOWN</span><div class="lane-track"><div class="lane-fill" id="laneB"></div></div><span class="lane-count" id="lcB">0</span></div>
+          <div class="lane-row"><span class="lane-name">UP</span><div class="lane-track"><div class="lane-fill" id="laneC"></div></div><span class="lane-count" id="lcC">0</span></div>
+          <div class="lane-row"><span class="lane-name">RIGHT</span><div class="lane-track"><div class="lane-fill" id="laneD"></div></div><span class="lane-count" id="lcD">0</span></div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Info Cards -->
-  <div class="info-bar" id="infoBar">
-    <div class="info-card"><div class="ivalue" id="iBpm">—</div><div class="ilabel">BPM</div></div>
-    <div class="info-card"><div class="ivalue" id="iNotes">—</div><div class="ilabel">Notes</div></div>
-    <div class="info-card"><div class="ivalue" id="iDuration">—</div><div class="ilabel">Dur (sec)</div></div>
-    <div class="info-card"><div class="ivalue" id="iLanes">—</div><div class="ilabel">Lanes</div></div>
-  </div>
-
-  <!-- Lane Bar -->
-  <div class="lane-preview" id="lanePreview">
-    <div class="lane-label">LANES</div>
-    <div class="lane-bar"><div class="fill" id="laneA"></div></div>
-    <div class="lane-bar"><div class="fill" id="laneB"></div></div>
-    <div class="lane-bar"><div class="fill" id="laneC"></div></div>
-    <div class="lane-bar"><div class="fill" id="laneD"></div></div>
-  </div>
-
-  <!-- Config Panel -->
-  <div class="panel">
-    <div class="panel-header">
-      <div class="dot"></div>
-      <span>Output Format</span>
+  <!-- Step 2: Settings -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step">2</div>
+      <span class="card-title">Chart Settings</span>
     </div>
-    <div class="panel-body">
-      <div class="config-row">
+    <div class="card-body">
+      <div class="vslice-info">
+        <span class="vi-icon">ℹ️</span>
+        <div class="vi-text">
+          Output format: <strong>V-Slice (FNF 0.3+)</strong> — produces a <code>songname-chart.json</code> file with
+          <code>version</code>, <code>generatedBy</code>, <code>scrollSpeed</code>, <code>events</code>, and a flat <code>notes</code> array of <code>{t, d, l, p}</code> objects.
+        </div>
+      </div>
+
+      <div class="form-grid" style="margin-bottom:14px">
         <div class="field">
           <label>Song Title</label>
           <input type="text" id="songTitle" placeholder="e.g. Montagem Boyfriend">
         </div>
         <div class="field">
-          <label>Artist / Charter</label>
+          <label>Artist</label>
           <input type="text" id="songArtist" placeholder="e.g. Unknown">
         </div>
       </div>
-      <div class="config-row">
+      <div class="form-grid three">
         <div class="field">
-          <label>Difficulty Tag</label>
+          <label>Difficulty</label>
           <select id="diffTag">
             <option value="easy">Easy</option>
             <option value="normal" selected>Normal</option>
@@ -579,87 +664,103 @@
           <label>Scroll Speed</label>
           <input type="number" id="scrollSpeed" value="2.5" step="0.1" min="0.5" max="10">
         </div>
+        <div class="field">
+          <label>Offset (ms)</label>
+          <input type="number" id="offsetMs" value="0" step="1">
+        </div>
       </div>
     </div>
   </div>
 
-  <button class="convert-btn" id="convertBtn" onclick="convertChart()" disabled>
-    ⚡ Convert & Download JSON
-  </button>
-
-  <div class="error-box" id="errorBox"></div>
+  <!-- Step 3: Convert -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step">3</div>
+      <span class="card-title">Convert & Download</span>
+    </div>
+    <div class="card-body">
+      <button class="convert-btn" id="convertBtn" onclick="convertChart()" disabled>
+        ⚡ Convert to V-Slice Chart JSON
+      </button>
+      <div class="error-box" id="errorBox"></div>
+    </div>
+  </div>
 
   <!-- Output -->
   <div class="output-section" id="outputSection">
-    <div class="output-panel">
-      <div class="output-header">
-        <div class="title-group">
-          <div class="status-dot"></div>
-          <span class="title" id="outputTitle">OUTPUT — VSLICE</span>
-        </div>
-        <button class="dl-btn" onclick="downloadJSON()">↓ Download JSON</button>
+    <div class="card">
+      <div class="card-header">
+        <div class="step" style="background:#16a34a">✓</div>
+        <span class="card-title">Output — V-Slice Chart</span>
       </div>
-      <pre class="output-code" id="outputCode"></pre>
+      <div class="card-body">
+        <div class="output-header-row">
+          <div class="output-status">
+            <div class="status-dot"></div>
+            Chart ready
+          </div>
+          <button class="dl-btn" onclick="downloadJSON()">↓ Download JSON</button>
+        </div>
+        <div class="output-meta">
+          <div class="output-meta-item">File: <strong id="outFileName">—</strong></div>
+          <div class="output-meta-item">Notes: <strong id="outNoteCount">—</strong></div>
+          <div class="output-meta-item">Format: <strong>V-Slice 2.0.0</strong></div>
+        </div>
+        <div class="code-box">
+          <div class="code-toolbar">
+            <span class="lang">JSON</span>
+            <button class="copy-btn" onclick="copyOutput()">Copy</button>
+          </div>
+          <pre class="output-code" id="outputCode"></pre>
+        </div>
+      </div>
     </div>
   </div>
 
 </div>
 
-<footer>
-  <p>FNMM Converter · Built for the FNF community · <span>♥</span> open source</p>
-</footer>
+<footer>FNMM → V-Slice Converter · For the FNF Modding Community</footer>
 
 <script>
-// ─── State ────────────────────────────────────────────────────────────────────
+// ── State ────────────────────────────────────────────────────────────────────
 let parsedData = null;
-let outputJSON = null;
+let outputJSON  = null;
 
-// ─── File Handling ────────────────────────────────────────────────────────────
-const dropzone = document.getElementById('dropzone');
+// ── Drop Zone ─────────────────────────────────────────────────────────────────
+const dropzone  = document.getElementById('dropzone');
 const fileInput = document.getElementById('fileInput');
 
-dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
-dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('dragover',  e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', ()  => dropzone.classList.remove('drag-over'));
 dropzone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropzone.classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file) loadFile(file);
+  e.preventDefault(); dropzone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
 });
 fileInput.addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); });
 
 async function loadFile(file) {
   showError('');
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    const uint8 = new Uint8Array(arrayBuffer);
-
-    // The .fnmm is a ZIP archive — parse it manually using JSZip-like approach
-    // We'll use a lightweight approach: find the data.json file inside the ZIP
+    const uint8 = new Uint8Array(await file.arrayBuffer());
     const dataJson = await extractFileFromZip(uint8, 'data.json');
-    if (!dataJson) throw new Error('No data.json found in .fnmm file. Is this a valid FNMobile chart?');
+    if (!dataJson) throw new Error('No data.json found — is this a valid FNMobile chart file?');
 
     parsedData = JSON.parse(dataJson);
+    if (!parsedData.strumLines || !parsedData.bpm)
+      throw new Error('Invalid data.json — missing strumLines or bpm.');
 
-    // Validate structure
-    if (!parsedData.strumLines || !parsedData.bpm) {
-      throw new Error('Invalid data.json structure — missing strumLines or bpm.');
-    }
-
-    // Show file info
     const kb = (file.size / 1024).toFixed(1);
     document.getElementById('fileName').textContent = file.name;
     document.getElementById('fileMeta').textContent = `${kb} KB · BPM ${parsedData.bpm} · ${countAllNotes(parsedData)} notes`;
     document.getElementById('fileAccepted').classList.add('show');
 
-    renderPreviewStats();
+    renderStats();
     document.getElementById('convertBtn').disabled = false;
     document.getElementById('outputSection').classList.remove('show');
 
-    // Pre-fill song title from filename
-    const baseName = file.name.replace('.fnmm', '').replace(/_/g, ' ');
+    const base = file.name.replace(/\.fnmm$/i, '').replace(/_/g, ' ');
     if (!document.getElementById('songTitle').value)
-      document.getElementById('songTitle').value = baseName;
+      document.getElementById('songTitle').value = base;
 
   } catch (err) {
     showError('❌ ' + err.message);
@@ -668,212 +769,177 @@ async function loadFile(file) {
   }
 }
 
-// ─── ZIP Parser (pure JS, no library) ────────────────────────────────────────
-// Reads sizes from the Central Directory so data descriptor (flag bit 3) files
-// are handled correctly — avoids "Extra bytes past the end" decompression errors.
+// ── ZIP Parser (Central Directory → correct sizes) ────────────────────────────
 async function extractFileFromZip(uint8, targetName) {
   const view = new DataView(uint8.buffer);
-  const len = uint8.length;
+  const len  = uint8.length;
 
-  // ── 1. Find End of Central Directory record (EOCD) ──────────────────────────
-  // Signature 0x06054b50, search backwards from end (allows ZIP comment)
-  let eocdOffset = -1;
-  for (let i = len - 22; i >= Math.max(0, len - 65557); i--) {
-    if (view.getUint32(i, true) === 0x06054b50) { eocdOffset = i; break; }
-  }
-  if (eocdOffset === -1) throw new Error('Not a valid ZIP file (no EOCD found).');
+  let eocd = -1;
+  for (let i = len - 22; i >= Math.max(0, len - 65557); i--)
+    if (view.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd === -1) throw new Error('Not a valid ZIP file.');
 
-  const cdCount  = view.getUint16(eocdOffset + 10, true);
-  const cdSize   = view.getUint32(eocdOffset + 12, true);
-  const cdOffset = view.getUint32(eocdOffset + 16, true);
+  const cdCount  = view.getUint16(eocd + 10, true);
+  const cdOffset = view.getUint32(eocd + 16, true);
 
-  // ── 2. Walk Central Directory entries to build a filename → info map ─────────
-  const entries = {}; // name → { compMethod, compSize, uncompSize, localHeaderOffset }
-  let cdPos = cdOffset;
+  const entries = {};
+  let p = cdOffset;
   for (let i = 0; i < cdCount; i++) {
-    if (view.getUint32(cdPos, true) !== 0x02014b50) break; // CD signature
-    const compMethod  = view.getUint16(cdPos + 10, true);
-    const compSize    = view.getUint32(cdPos + 20, true);
-    const uncompSize  = view.getUint32(cdPos + 24, true);
-    const fnLen       = view.getUint16(cdPos + 28, true);
-    const extraLen    = view.getUint16(cdPos + 30, true);
-    const commentLen  = view.getUint16(cdPos + 32, true);
-    const lhOffset    = view.getUint32(cdPos + 42, true);
-    const name        = new TextDecoder().decode(uint8.slice(cdPos + 46, cdPos + 46 + fnLen));
-    entries[name]     = { compMethod, compSize, uncompSize, lhOffset };
-    cdPos += 46 + fnLen + extraLen + commentLen;
+    if (view.getUint32(p, true) !== 0x02014b50) break;
+    const compMethod = view.getUint16(p + 10, true);
+    const compSize   = view.getUint32(p + 20, true);
+    const fnLen      = view.getUint16(p + 28, true);
+    const extraLen   = view.getUint16(p + 30, true);
+    const commentLen = view.getUint16(p + 32, true);
+    const lhOffset   = view.getUint32(p + 42, true);
+    const name       = new TextDecoder().decode(uint8.slice(p + 46, p + 46 + fnLen));
+    entries[name]    = { compMethod, compSize, lhOffset };
+    p += 46 + fnLen + extraLen + commentLen;
   }
 
-  const entry = entries[targetName];
-  if (!entry) return null;
+  const e = entries[targetName];
+  if (!e) return null;
 
-  // ── 3. Jump to local file header to find actual data start ──────────────────
-  const lh = entry.lhOffset;
+  const lh      = e.lhOffset;
   if (view.getUint32(lh, true) !== 0x04034b50) throw new Error('Bad local file header.');
-  const lhFnLen    = view.getUint16(lh + 26, true);
-  const lhExtraLen = view.getUint16(lh + 28, true);
-  const dataStart  = lh + 30 + lhFnLen + lhExtraLen;
+  const lhFnLen = view.getUint16(lh + 26, true);
+  const lhExLen = view.getUint16(lh + 28, true);
+  const start   = lh + 30 + lhFnLen + lhExLen;
+  const comp    = uint8.slice(start, start + e.compSize);
 
-  // Use sizes from Central Directory (correct even when flag bit 3 / data descriptor is set)
-  const compData = uint8.slice(dataStart, dataStart + entry.compSize);
+  if (e.compMethod === 0) return new TextDecoder().decode(comp);
 
-  // ── 4. Decompress ────────────────────────────────────────────────────────────
-  if (entry.compMethod === 0) {
-    return new TextDecoder().decode(compData);
-  } else if (entry.compMethod === 8) {
-    try {
-      const ds = new DecompressionStream('deflate-raw');
-      const writer = ds.writable.getWriter();
-      const reader = ds.readable.getReader();
-      writer.write(compData);
-      writer.close();
-      const chunks = [];
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value);
-      }
-      const total = chunks.reduce((s, c) => s + c.length, 0);
-      const merged = new Uint8Array(total);
-      let pos = 0;
-      for (const c of chunks) { merged.set(c, pos); pos += c.length; }
-      return new TextDecoder().decode(merged);
-    } catch (e) {
-      throw new Error('Failed to decompress data.json: ' + e.message);
-    }
-  } else {
-    throw new Error(`Unsupported compression method: ${entry.compMethod}`);
+  if (e.compMethod === 8) {
+    const ds     = new DecompressionStream('deflate-raw');
+    const writer = ds.writable.getWriter();
+    const reader = ds.readable.getReader();
+    writer.write(comp); writer.close();
+    const chunks = [];
+    for (;;) { const { done, value } = await reader.read(); if (done) break; chunks.push(value); }
+    const total = chunks.reduce((s, c) => s + c.length, 0);
+    const out   = new Uint8Array(total);
+    let pos = 0;
+    for (const c of chunks) { out.set(c, pos); pos += c.length; }
+    return new TextDecoder().decode(out);
   }
+  throw new Error(`Unsupported compression method: ${e.compMethod}`);
 }
 
-// ─── Stats ────────────────────────────────────────────────────────────────────
+// ── Stats ─────────────────────────────────────────────────────────────────────
 function countAllNotes(data) {
-  let total = 0;
-  for (const section of data.strumLines) {
-    for (const lane of section) total += lane.length;
-  }
-  return total;
+  let n = 0;
+  for (const sec of data.strumLines) for (const lane of sec) n += lane.length;
+  return n;
 }
 
-function renderPreviewStats() {
+function renderStats() {
   const data = parsedData;
-  const bpm = data.bpm;
-  const npb = data.npb || 4;
-  const secPerNote = (60 / bpm) / npb;
-  const totalNotes = countAllNotes(data);
+  const bpm  = data.bpm;
+  const npb  = data.npb || 4;
+  const spn  = (60 / bpm) / npb;
 
   let maxSec = 0;
-  for (const section of data.strumLines)
-    for (const lane of section)
+  for (const sec of data.strumLines)
+    for (const lane of sec)
       for (const note of lane)
-        if (note.start * secPerNote > maxSec) maxSec = note.start * secPerNote;
+        if (note.start * spn > maxSec) maxSec = note.start * spn;
 
-  document.getElementById('iBpm').textContent = bpm;
-  document.getElementById('iNotes').textContent = totalNotes;
+  document.getElementById('iBpm').textContent      = bpm;
+  document.getElementById('iNotes').textContent    = countAllNotes(data);
   document.getElementById('iDuration').textContent = maxSec.toFixed(1);
-  document.getElementById('iLanes').textContent = data.strumLines[0].length;
+  document.getElementById('iLanes').textContent    = data.strumLines[0].length;
   document.getElementById('infoBar').classList.add('show');
 
-  // Lane distribution bars
   const perLane = [0, 0, 0, 0];
-  for (const section of data.strumLines) {
-    for (let l = 0; l < Math.min(section.length, 4); l++) perLane[l] += section[l].length;
-  }
+  for (const sec of data.strumLines)
+    for (let l = 0; l < Math.min(sec.length, 4); l++) perLane[l] += sec[l].length;
   const maxL = Math.max(...perLane, 1);
   ['A','B','C','D'].forEach((id, i) => {
     document.getElementById('lane' + id).style.width = (perLane[i] / maxL * 100) + '%';
+    document.getElementById('lc'  + id).textContent  = perLane[i];
   });
-  document.getElementById('lanePreview').classList.add('show');
+  document.getElementById('laneSection').classList.add('show');
 }
 
-// ─── Conversion ────────────────────────────────────────────────────────────────
-
+// ── Convert ───────────────────────────────────────────────────────────────────
 function convertChart() {
   if (!parsedData) return;
+  const title  = document.getElementById('songTitle').value   || 'unknown';
+  const diff   = document.getElementById('diffTag').value;
+  const speed  = parseFloat(document.getElementById('scrollSpeed').value) || 2.5;
+  const offset = parseInt(document.getElementById('offsetMs').value)      || 0;
 
-  const title = document.getElementById('songTitle').value || 'unknown';
-  const artist = document.getElementById('songArtist').value || 'unknown';
-  const diff = document.getElementById('diffTag').value;
-  const speed = parseFloat(document.getElementById('scrollSpeed').value) || 2.5;
+  const result = convertToVSlice(parsedData, title, diff, speed, offset);
+  outputJSON   = result;
 
-  const result = convertToVSlice(parsedData, title, diff, speed);
+  const slug  = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  const fname = `${slug}-chart.json`;
 
-  outputJSON = result;
-  const formatted = JSON.stringify(result, null, 2);
-  document.getElementById('outputCode').innerHTML = syntaxHighlight(formatted);
-  document.getElementById('outputTitle').textContent = 'OUTPUT — VSLICE CHART';
+  document.getElementById('outFileName').textContent  = fname;
+  document.getElementById('outNoteCount').textContent = result.notes[diff].length;
+  document.getElementById('outputCode').innerHTML     = syntaxHighlight(JSON.stringify(result, null, 2));
   document.getElementById('outputSection').classList.add('show');
   document.getElementById('outputSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// ─── V-Slice Format ───────────────────────────────────────────────────────────
-// Matches exact output of the Python converter:
-// { version, generatedBy, scrollSpeed, events: [FocusCamera], notes: { diff: [ {t,d,l,p} ] } }
-function convertToVSlice(data, title, diff, speed) {
-  const bpm = data.bpm;
+// ── V-Slice Conversion ────────────────────────────────────────────────────────
+function convertToVSlice(data, title, diff, speed, offsetMs) {
   const npb = data.npb || 4;
-  const secPerBeat = 60 / bpm;
-  const secPerNote = secPerBeat / npb;
+  const spn = (60 / data.bpm) / npb; // seconds per note-step
 
-  // Flatten all notes from all strum line sections → {t(ms), d(0-3), l(ms), p:[]}
-  // strumLines is an array of "sections"; each section is an array of 4 lane arrays
-  // lane index = direction: 0=left, 1=down, 2=up, 3=right
   const flatNotes = [];
-  for (const section of data.strumLines) {
-    for (let lane = 0; lane < section.length; lane++) {
-      const dir = lane % 4; // direction 0-3
-      for (const note of section[lane]) {
-        const t = Math.round(note.start * secPerNote * 1000);
-        const l = note.duration > 0 ? Math.round(note.duration * secPerNote * 1000) : 0;
+  for (const sec of data.strumLines) {
+    for (let lane = 0; lane < sec.length; lane++) {
+      const dir = lane % 4;
+      for (const note of sec[lane]) {
+        const t = Math.round(note.start * spn * 1000) + offsetMs;
+        const l = note.duration > 0 ? Math.round(note.duration * spn * 1000) : 0;
         flatNotes.push({ t, d: dir, l, p: [] });
       }
     }
   }
-
-  // Sort by time ascending
   flatNotes.sort((a, b) => a.t - b.t || a.d - b.d);
 
   return {
-    version: "2.0.0",
+    version:     "2.0.0",
     generatedBy: "ConvertedFromFNMM",
     scrollSpeed: { [diff]: speed },
-    events: [
-      { t: 0, e: "FocusCamera", v: { char: 0 } }
-    ],
-    notes: {
-      [diff]: flatNotes
-    }
+    events:      [{ t: 0, e: "FocusCamera", v: { char: 0 } }],
+    notes:       { [diff]: flatNotes }
   };
 }
 
-// ─── Download ─────────────────────────────────────────────────────────────────
+// ── Download ──────────────────────────────────────────────────────────────────
 function downloadJSON() {
   if (!outputJSON) return;
-  const title = (document.getElementById('songTitle').value || 'chart').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-  const fname = `${title}-chart.json`;
-  const blob = new Blob([JSON.stringify(outputJSON, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = fname;
+  const slug  = (document.getElementById('songTitle').value || 'chart').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  const fname = `${slug}-chart.json`;
+  const blob  = new Blob([JSON.stringify(outputJSON, null, 2)], { type: 'application/json' });
+  const a     = document.createElement('a');
+  a.href      = URL.createObjectURL(blob);
+  a.download  = fname;
   a.click();
   URL.revokeObjectURL(a.href);
 }
 
-// ─── Syntax Highlight ─────────────────────────────────────────────────────────
+function copyOutput() {
+  if (!outputJSON) return;
+  navigator.clipboard.writeText(JSON.stringify(outputJSON, null, 2))
+    .then(() => { const b = document.querySelector('.copy-btn'); b.textContent = 'Copied!'; setTimeout(() => b.textContent = 'Copy', 1500); });
+}
+
+// ── Syntax Highlight ──────────────────────────────────────────────────────────
 function syntaxHighlight(json) {
   return json
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function(match) {
-      if (/^"/.test(match)) {
-        if (/:$/.test(match)) return `<span class="json-key">${match}</span>`;
-        return `<span class="json-str">${match}</span>`;
-      }
-      if (/true|false/.test(match)) return `<span class="json-bool">${match}</span>`;
-      return `<span class="json-num">${match}</span>`;
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, m => {
+      if (/^"/.test(m)) return /:$/.test(m) ? `<span class="json-key">${m}</span>` : `<span class="json-str">${m}</span>`;
+      if (/true|false/.test(m)) return `<span class="json-bool">${m}</span>`;
+      return `<span class="json-num">${m}</span>`;
     });
 }
 
-// ─── Error Display ────────────────────────────────────────────────────────────
+// ── Error ─────────────────────────────────────────────────────────────────────
 function showError(msg) {
   const el = document.getElementById('errorBox');
   el.textContent = msg;
