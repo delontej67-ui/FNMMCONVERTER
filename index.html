@@ -669,58 +669,81 @@ async function loadFile(file) {
 }
 
 // ─── ZIP Parser (pure JS, no library) ────────────────────────────────────────
+// Reads sizes from the Central Directory so data descriptor (flag bit 3) files
+// are handled correctly — avoids "Extra bytes past the end" decompression errors.
 async function extractFileFromZip(uint8, targetName) {
-  // Use the browser's built-in DecompressionStream via a trick:
-  // Walk the ZIP local file headers manually
   const view = new DataView(uint8.buffer);
-  let offset = 0;
+  const len = uint8.length;
 
-  while (offset < uint8.length - 4) {
-    const sig = view.getUint32(offset, true);
-    if (sig !== 0x04034b50) { offset++; continue; }
-
-    const fnLen = view.getUint16(offset + 26, true);
-    const extraLen = view.getUint16(offset + 28, true);
-    const compMethod = view.getUint16(offset + 8, true);
-    const compSize = view.getUint32(offset + 18, true);
-    const uncompSize = view.getUint32(offset + 22, true);
-
-    const fnBytes = uint8.slice(offset + 30, offset + 30 + fnLen);
-    const fileName = new TextDecoder().decode(fnBytes);
-    const dataOffset = offset + 30 + fnLen + extraLen;
-    const compData = uint8.slice(dataOffset, dataOffset + compSize);
-
-    if (fileName === targetName) {
-      if (compMethod === 0) {
-        // Stored (no compression)
-        return new TextDecoder().decode(compData);
-      } else if (compMethod === 8) {
-        // Deflate — use DecompressionStream
-        try {
-          const ds = new DecompressionStream('deflate-raw');
-          const writer = ds.writable.getWriter();
-          const reader = ds.readable.getReader();
-          writer.write(compData);
-          writer.close();
-          const chunks = [];
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            chunks.push(value);
-          }
-          const total = chunks.reduce((s, c) => s + c.length, 0);
-          const merged = new Uint8Array(total);
-          let pos = 0;
-          for (const c of chunks) { merged.set(c, pos); pos += c.length; }
-          return new TextDecoder().decode(merged);
-        } catch(e) {
-          throw new Error('Failed to decompress data.json: ' + e.message);
-        }
-      }
-    }
-    offset = dataOffset + compSize;
+  // ── 1. Find End of Central Directory record (EOCD) ──────────────────────────
+  // Signature 0x06054b50, search backwards from end (allows ZIP comment)
+  let eocdOffset = -1;
+  for (let i = len - 22; i >= Math.max(0, len - 65557); i--) {
+    if (view.getUint32(i, true) === 0x06054b50) { eocdOffset = i; break; }
   }
-  return null;
+  if (eocdOffset === -1) throw new Error('Not a valid ZIP file (no EOCD found).');
+
+  const cdCount  = view.getUint16(eocdOffset + 10, true);
+  const cdSize   = view.getUint32(eocdOffset + 12, true);
+  const cdOffset = view.getUint32(eocdOffset + 16, true);
+
+  // ── 2. Walk Central Directory entries to build a filename → info map ─────────
+  const entries = {}; // name → { compMethod, compSize, uncompSize, localHeaderOffset }
+  let cdPos = cdOffset;
+  for (let i = 0; i < cdCount; i++) {
+    if (view.getUint32(cdPos, true) !== 0x02014b50) break; // CD signature
+    const compMethod  = view.getUint16(cdPos + 10, true);
+    const compSize    = view.getUint32(cdPos + 20, true);
+    const uncompSize  = view.getUint32(cdPos + 24, true);
+    const fnLen       = view.getUint16(cdPos + 28, true);
+    const extraLen    = view.getUint16(cdPos + 30, true);
+    const commentLen  = view.getUint16(cdPos + 32, true);
+    const lhOffset    = view.getUint32(cdPos + 42, true);
+    const name        = new TextDecoder().decode(uint8.slice(cdPos + 46, cdPos + 46 + fnLen));
+    entries[name]     = { compMethod, compSize, uncompSize, lhOffset };
+    cdPos += 46 + fnLen + extraLen + commentLen;
+  }
+
+  const entry = entries[targetName];
+  if (!entry) return null;
+
+  // ── 3. Jump to local file header to find actual data start ──────────────────
+  const lh = entry.lhOffset;
+  if (view.getUint32(lh, true) !== 0x04034b50) throw new Error('Bad local file header.');
+  const lhFnLen    = view.getUint16(lh + 26, true);
+  const lhExtraLen = view.getUint16(lh + 28, true);
+  const dataStart  = lh + 30 + lhFnLen + lhExtraLen;
+
+  // Use sizes from Central Directory (correct even when flag bit 3 / data descriptor is set)
+  const compData = uint8.slice(dataStart, dataStart + entry.compSize);
+
+  // ── 4. Decompress ────────────────────────────────────────────────────────────
+  if (entry.compMethod === 0) {
+    return new TextDecoder().decode(compData);
+  } else if (entry.compMethod === 8) {
+    try {
+      const ds = new DecompressionStream('deflate-raw');
+      const writer = ds.writable.getWriter();
+      const reader = ds.readable.getReader();
+      writer.write(compData);
+      writer.close();
+      const chunks = [];
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+      }
+      const total = chunks.reduce((s, c) => s + c.length, 0);
+      const merged = new Uint8Array(total);
+      let pos = 0;
+      for (const c of chunks) { merged.set(c, pos); pos += c.length; }
+      return new TextDecoder().decode(merged);
+    } catch (e) {
+      throw new Error('Failed to decompress data.json: ' + e.message);
+    }
+  } else {
+    throw new Error(`Unsupported compression method: ${entry.compMethod}`);
+  }
 }
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
