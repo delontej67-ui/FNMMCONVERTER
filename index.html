@@ -904,9 +904,145 @@
     .how-steps { grid-template-columns: 1fr; }
     .theme-toggle-label { display: none; }
   }
+
+  /* ── TOS Modal ── */
+  .tos-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; animation:tosIn 0.25s ease; }
+  .tos-overlay.hidden { display:none; }
+  @keyframes tosIn { from{opacity:0} to{opacity:1} }
+  .tos-modal { background:var(--white); border:1px solid var(--border); border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,0.35); width:100%; max-width:560px; max-height:90vh; display:flex; flex-direction:column; animation:slideUp 0.28s cubic-bezier(0.34,1.56,0.64,1); overflow:hidden; }
+  @keyframes slideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+  .tos-modal-head { padding:22px 24px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:14px; flex-shrink:0; }
+  .tos-logo { width:44px; height:44px; border-radius:10px; object-fit:cover; box-shadow:0 2px 8px rgba(0,0,0,0.15); flex-shrink:0; }
+  .tos-head-text { flex:1; }
+  .tos-head-text h2 { font-size:16px; font-weight:700; color:var(--text); margin-bottom:2px; }
+  .tos-head-text p { font-size:11px; color:var(--muted); }
+  .tos-required-badge { background:#fef3c7; color:#92400e; border:1px solid #fcd34d; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; letter-spacing:0.3px; flex-shrink:0; }
+  [data-theme="dark"] .tos-required-badge { background:#3a2a00; color:#fcd34d; border-color:#92400e; }
+  .tos-scroll-area { flex:1; overflow-y:auto; padding:20px 24px; font-size:12.5px; color:var(--text2); line-height:1.7; }
+  .tos-scroll-area::-webkit-scrollbar { width:5px; }
+  .tos-scroll-area::-webkit-scrollbar-track { background:transparent; }
+  .tos-scroll-area::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+  .tos-section-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:var(--blue); margin:18px 0 6px; }
+  .tos-section-title:first-child { margin-top:0; }
+  .tos-scroll-area p { margin-bottom:10px; }
+  .tos-credit-box { background:var(--blue-light); border:1px solid #bfdbfe; border-radius:8px; padding:12px 14px; margin:14px 0; display:flex; gap:10px; align-items:flex-start; }
+  [data-theme="dark"] .tos-credit-box { border-color:#2563eb; }
+  .tos-credit-icon { font-size:18px; flex-shrink:0; }
+  .tos-credit-text { font-size:12px; color:#1e40af; line-height:1.5; }
+  [data-theme="dark"] .tos-credit-text { color:#93c5fd; }
+  .tos-credit-text strong { font-weight:700; }
+  .tos-scroll-end { text-align:center; padding:18px 0 4px; font-size:11px; color:var(--muted2); display:flex; align-items:center; justify-content:center; gap:6px; }
+  .tos-scroll-end .end-line { flex:1; height:1px; background:var(--border); }
+  .tos-footer { padding:16px 24px; border-top:1px solid var(--border); flex-shrink:0; background:#fafbfc; }
+  [data-theme="dark"] .tos-footer { background:#14161f; }
+  .tos-scroll-notice { font-size:11px; color:var(--muted); text-align:center; margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:6px; transition:opacity 0.4s; }
+  .tos-scroll-notice.faded { opacity:0; pointer-events:none; }
+  .tos-scroll-progress { height:3px; background:var(--border); border-radius:2px; margin-bottom:14px; overflow:hidden; }
+  .tos-progress-fill { height:100%; background:var(--blue); border-radius:2px; width:0%; transition:width 0.15s ease; }
+  .tos-btn-row { display:flex; gap:10px; align-items:center; }
+  .tos-dont-show { display:flex; align-items:center; gap:7px; cursor:pointer; user-select:none; margin-right:auto; }
+  .tos-dont-show input[type="checkbox"] { display:none; }
+  .tos-checkbox { width:17px; height:17px; border:2px solid var(--border2); border-radius:4px; display:flex; align-items:center; justify-content:center; transition:border-color 0.15s, background 0.15s; flex-shrink:0; }
+  .tos-dont-show.checked .tos-checkbox { background:var(--blue); border-color:var(--blue); }
+  .tos-dont-show.checked .tos-checkbox::after { content:'✓'; color:white; font-size:10px; font-weight:700; line-height:1; }
+  .tos-dont-show-label { font-size:12px; color:var(--muted); font-weight:500; }
+  .tos-ok-btn { background:var(--blue); color:white; border:none; border-radius:8px; font-family:inherit; font-size:13px; font-weight:600; padding:9px 24px; cursor:not-allowed; opacity:0.4; transition:background 0.15s, opacity 0.2s, transform 0.1s; display:flex; align-items:center; gap:7px; }
+  .tos-ok-btn.unlocked { cursor:pointer; opacity:1; }
+  .tos-ok-btn.unlocked:hover { background:var(--blue-dark); transform:translateY(-1px); }
+  .tos-ok-btn.unlocked:active { transform:translateY(0); }
+  .tos-overlay.hidden { display:none !important; }
+  [data-theme="dark"] .tos-modal { background:var(--white); border-color:var(--border); }
+  [data-theme="dark"] .tos-footer { background:#14161f; border-top-color:var(--border); }
+  [data-theme="dark"] .tos-modal-head { border-bottom-color:var(--border); }
+  [data-theme="dark"] .tos-scroll-area { color:var(--text2); }
+  [data-theme="dark"] .tos-scroll-end .end-line { background:var(--border); }
 </style>
 </head>
 <body>
+
+<!-- ── Terms of Service Modal ── -->
+<div class="tos-overlay" id="tosOverlay">
+  <div class="tos-modal" role="dialog" aria-modal="true" aria-labelledby="tosTitle">
+
+    <div class="tos-modal-head">
+      <img class="tos-logo" src="https://gcdnb.pbrd.co/images/PfuBZPiQg0ir.png" alt="FNMM Logo">
+      <div class="tos-head-text">
+        <h2 id="tosTitle">Terms of Service</h2>
+        <p>FNMM → V-Slice Chart Converter · Please read before continuing</p>
+      </div>
+      <span class="tos-required-badge">REQUIRED</span>
+    </div>
+
+    <div class="tos-scroll-area" id="tosScrollArea">
+
+      <div class="tos-credit-box">
+        <span class="tos-credit-icon">🎉</span>
+        <div class="tos-credit-text">
+          <strong>A huge shout-out to the Funky Maker team</strong> for building this awesome app!
+          The FNMM chart format and FNMobile editor are their creative work — this converter tool
+          exists to extend and complement that incredible effort. Thank you for making mobile
+          Friday Night Funkin' modding possible! 🎵
+        </div>
+      </div>
+
+      <div class="tos-section-title">1. Acceptance of Terms</div>
+      <p>By using the FNMM → V-Slice Chart Converter ("the Tool"), you agree to be bound by these Terms of Service. If you do not agree, please do not use the Tool. These terms apply to all users who access or use the Tool for any purpose.</p>
+
+      <div class="tos-section-title">2. Description of the Tool</div>
+      <p>This Tool is a browser-based converter that transforms <code>.fnmm</code> chart files — created by the FNMobile app developed by the <strong>Funky Maker</strong> team — into V-Slice format JSON files compatible with Friday Night Funkin' mods running on engine version 0.3 and above. All processing is performed entirely in your browser; no files are uploaded to any server.</p>
+
+      <div class="tos-section-title">3. Intellectual Property & Credits</div>
+      <p>The <code>.fnmm</code> file format and the FNMobile chart editor are the intellectual property of the <strong>Funky Maker</strong> development team. This Tool is an independent, fan-made utility and is not officially affiliated with, endorsed by, or sponsored by Funky Maker or the Friday Night Funkin' development team.</p>
+      <p>The underlying charts you convert remain the intellectual property of their respective creators. You are responsible for ensuring you have the right to convert and use any chart files you process through this Tool.</p>
+
+      <div class="tos-section-title">4. Permitted Use</div>
+      <p>You may use this Tool to convert chart files for personal modding projects, fan-made Friday Night Funkin' mods, and non-commercial community content. You may share output files as part of your own mod releases, provided you credit the original chart author and acknowledge this converter where appropriate.</p>
+
+      <div class="tos-section-title">5. Prohibited Use</div>
+      <p>You may <strong>not</strong> use this Tool to convert or distribute charts belonging to others without their permission. You may not use the Tool for any commercial purpose, to misrepresent the origin of chart content, or in any way that violates the rights of chart authors, Funky Maker, or the Friday Night Funkin' team.</p>
+
+      <div class="tos-section-title">6. No Warranty</div>
+      <p>This Tool is provided "as is" without warranty of any kind, express or implied. The output JSON files are provided as a best-effort conversion from the FNMM format; timing accuracy, note placement, and compatibility with specific mod engines are not guaranteed. Always review converted charts before including them in a release.</p>
+
+      <div class="tos-section-title">7. Limitation of Liability</div>
+      <p>To the fullest extent permitted by law, the creators of this Tool shall not be liable for any direct, indirect, incidental, or consequential damages arising from your use of the Tool or from files produced by it. Use of converted chart data in your mod is entirely at your own risk.</p>
+
+      <div class="tos-section-title">8. Privacy</div>
+      <p>This Tool does not collect, transmit, or store any personal data, chart files, or usage information. All file processing occurs locally in your browser. The "Don't Show Again" preference is stored only in your browser's localStorage and is never sent anywhere.</p>
+
+      <div class="tos-section-title">9. Changes to These Terms</div>
+      <p>These terms may be updated from time to time. Continued use of the Tool after any change constitutes acceptance of the revised terms. We recommend reviewing the terms periodically.</p>
+
+      <div class="tos-section-title">10. Contact</div>
+      <p>Questions or concerns about these terms? Reach out to the community on the Discord server linked in the credits footer below, or contact the Funky Maker team directly through their official channels.</p>
+
+      <div class="tos-scroll-end">
+        <span class="end-line"></span>
+        &nbsp;End of Terms&nbsp;
+        <span class="end-line"></span>
+      </div>
+
+    </div><!-- /scroll area -->
+
+    <div class="tos-footer">
+      <div class="tos-scroll-progress"><div class="tos-progress-fill" id="tosProgressFill"></div></div>
+      <div class="tos-scroll-notice" id="tosScrollNotice">
+        <span>↓</span> Scroll to the bottom to enable OK
+      </div>
+      <div class="tos-btn-row">
+        <label class="tos-dont-show" id="tosDontShow" onclick="toggleDontShow()">
+          <input type="checkbox" id="tosDontShowCheck">
+          <span class="tos-checkbox"></span>
+          <span class="tos-dont-show-label">Don't show again</span>
+        </label>
+        <button class="tos-ok-btn" id="tosOkBtn" onclick="closeTos()" disabled>
+          ✓ I Agree &amp; Continue
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
 
 <!-- Top Bar -->
 <nav class="topbar">
@@ -1421,6 +1557,61 @@ function syntaxHighlight(json) {
       if (/true|false/.test(m)) return `<span class="json-bool">${m}</span>`;
       return `<span class="json-num">${m}</span>`;
     });
+}
+
+// ── Terms of Service ──────────────────────────────────────────────────────────
+(function initTos() {
+  const TOS_KEY = 'fnmm_tos_accepted';
+  const overlay = document.getElementById('tosOverlay');
+  if (!overlay) return;
+
+  // If the user has previously checked "Don't show again", skip the modal
+  if (localStorage.getItem(TOS_KEY) === 'true') {
+    overlay.classList.add('hidden');
+    return;
+  }
+
+  // Scroll-progress & unlock logic
+  const scrollArea    = document.getElementById('tosScrollArea');
+  const progressFill  = document.getElementById('tosProgressFill');
+  const scrollNotice  = document.getElementById('tosScrollNotice');
+  const okBtn         = document.getElementById('tosOkBtn');
+
+  function onTosScroll() {
+    const { scrollTop, scrollHeight, clientHeight } = scrollArea;
+    const scrollable = scrollHeight - clientHeight;
+    const pct = scrollable <= 0 ? 100 : Math.round((scrollTop / scrollable) * 100);
+
+    progressFill.style.width = pct + '%';
+
+    // Unlock the OK button once they've reached the bottom (within 5px)
+    if (scrollTop + clientHeight >= scrollHeight - 5) {
+      okBtn.disabled = false;
+      okBtn.classList.add('unlocked');
+      scrollNotice.classList.add('faded');
+    }
+  }
+
+  scrollArea.addEventListener('scroll', onTosScroll);
+  // Check once on load (in case the content is short enough to not scroll)
+  setTimeout(onTosScroll, 100);
+})();
+
+function toggleDontShow() {
+  const label = document.getElementById('tosDontShow');
+  label.classList.toggle('checked');
+}
+
+function closeTos() {
+  const overlay = document.getElementById('tosOverlay');
+  const dontShow = document.getElementById('tosDontShow');
+  if (dontShow.classList.contains('checked')) {
+    localStorage.setItem('fnmm_tos_accepted', 'true');
+  }
+  overlay.style.animation = 'none';
+  overlay.style.opacity   = '0';
+  overlay.style.transition = 'opacity 0.2s ease';
+  setTimeout(() => overlay.classList.add('hidden'), 200);
 }
 
 // ── Error ─────────────────────────────────────────────────────────────────────
