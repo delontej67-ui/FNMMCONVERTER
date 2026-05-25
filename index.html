@@ -621,9 +621,288 @@
     color: var(--muted2);
   }
 
+  /* ── Dark Mode Variables ── */
+  [data-theme="dark"] {
+    --bg:        #0f1117;
+    --white:     #1a1d27;
+    --border:    #2a2d3a;
+    --border2:   #3a3d4e;
+    --blue:      #3b82f6;
+    --blue-dark: #2563eb;
+    --blue-light:#1e2a45;
+    --blue-mid:  #1e3a5f;
+    --text:      #e2e8f0;
+    --text2:     #cbd5e1;
+    --muted:     #94a3b8;
+    --muted2:    #64748b;
+    --green:     #22c55e;
+    --green-bg:  #0f2a1a;
+    --green-bdr: #166534;
+    --red:       #f87171;
+    --red-bg:    #2a1010;
+    --red-bdr:   #7f1d1d;
+    --shadow:    0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  [data-theme="dark"] .card-header { background: #14161f; }
+  [data-theme="dark"] .dropzone { background: #14161f; }
+  [data-theme="dark"] .dropzone:hover, [data-theme="dark"] .dropzone.drag-over { background: #1e2a45; }
+  [data-theme="dark"] .info-tile { background: #14161f; }
+  [data-theme="dark"] .vslice-info { background: #1e2a45; border-color: #2563eb; }
+  [data-theme="dark"] .vslice-info .vi-text { color: #93c5fd; }
+  [data-theme="dark"] .field input, [data-theme="dark"] .field select { background: #14161f; color: var(--text); }
+  [data-theme="dark"] .topbar { background: #1a1d27; border-bottom-color: #2a2d3a; }
+  [data-theme="dark"] .topbar-badge { background: #1e3a5f; border-color: #2563eb; }
+  [data-theme="dark"] .credits-footer { background: #1a1d27; }
+  [data-theme="dark"] .how-to-card { background: #1a1d27; border-color: #2a2d3a; }
+  [data-theme="dark"] .how-step-icon { background: #14161f; border-color: #2a2d3a; }
+  [data-theme="dark"] .changelog-card { background: #1a1d27; border-color: #2a2d3a; }
+  [data-theme="dark"] .cl-item { border-bottom-color: #2a2d3a; }
+  [data-theme="dark"] code { background: #2a2d3a; color: #93c5fd; }
+
+  /* ── Dark Mode Toggle ── */
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .theme-toggle-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  .toggle-track {
+    width: 40px;
+    height: 22px;
+    background: var(--border2);
+    border-radius: 11px;
+    position: relative;
+    transition: background 0.25s;
+    flex-shrink: 0;
+  }
+
+  .toggle-track.on { background: var(--blue); }
+
+  .toggle-thumb {
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    transition: transform 0.25s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+
+  .toggle-track.on .toggle-thumb { transform: translateX(18px); }
+
+  .toggle-icon { font-size: 14px; }
+
+  /* ── How to Use ── */
+  .how-to-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .how-to-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fafbfc;
+    cursor: pointer;
+  }
+
+  [data-theme="dark"] .how-to-header { background: #14161f; }
+
+  .how-to-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .how-to-chevron {
+    font-size: 12px;
+    color: var(--muted);
+    transition: transform 0.2s;
+  }
+
+  .how-to-chevron.open { transform: rotate(180deg); }
+
+  .how-to-body {
+    padding: 20px;
+    display: none;
+  }
+
+  .how-to-body.open { display: block; }
+
+  .how-steps {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .how-step {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .how-step-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  .how-step-text strong {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .how-step-text span {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .how-tip {
+    margin-top: 16px;
+    background: var(--blue-light);
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #1e40af;
+    line-height: 1.5;
+  }
+
+  [data-theme="dark"] .how-tip { color: #93c5fd; border-color: #2563eb; }
+
+  /* ── Changelog ── */
+  .changelog-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .changelog-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fafbfc;
+    cursor: pointer;
+  }
+
+  [data-theme="dark"] .changelog-header { background: #14161f; }
+
+  .cl-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cl-body { padding: 16px 20px; display: none; }
+  .cl-body.open { display: block; }
+
+  .cl-version {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cl-new-badge {
+    background: var(--blue);
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+    letter-spacing: 0.3px;
+  }
+
+  .cl-item {
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    line-height: 1.4;
+  }
+
+  .cl-item:last-child { border-bottom: none; }
+  .cl-item-dot { color: var(--blue); font-weight: 700; flex-shrink: 0; }
+
+  /* ── Reset Button ── */
+  .reset-btn {
+    background: transparent;
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .reset-btn:hover { border-color: var(--red-bdr); color: var(--red); background: var(--red-bg); }
+
+  /* ── Topbar right group ── */
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
   @media (max-width: 560px) {
     .form-grid, .form-grid.three { grid-template-columns: 1fr; }
     .info-grid { grid-template-columns: repeat(2, 1fr); }
+    .how-steps { grid-template-columns: 1fr; }
+    .theme-toggle-label { display: none; }
   }
 </style>
 </head>
@@ -635,7 +914,16 @@
     <div class="brand-icon"><img src="https://gcdnb.pbrd.co/images/PfuBZPiQg0ir.png" alt="Logo"></div>
     FNMM Converter
   </div>
-  <div class="topbar-badge">V-Slice Only</div>
+  <div class="topbar-right">
+    <div class="topbar-badge">V-Slice Only</div>
+    <div class="theme-toggle" id="themeToggle" title="Toggle dark mode">
+      <span class="toggle-icon" id="toggleIcon">🌙</span>
+      <div class="toggle-track" id="toggleTrack">
+        <div class="toggle-thumb"></div>
+      </div>
+      <span class="theme-toggle-label" id="toggleLabel">Dark</span>
+    </div>
+  </div>
 </nav>
 
 <div class="page">
@@ -645,6 +933,70 @@
     <div class="vslice-tag">🌊 Friday Night Funkin' — V-Slice Format</div>
     <h1>FNMM → V-Slice Chart Converter</h1>
     <p>Upload a <code>.fnmm</code> file and convert it to a V-Slice chart JSON ready to use in your mod.</p>
+  </div>
+
+  <!-- How to Use -->
+  <div class="how-to-card">
+    <div class="how-to-header" onclick="toggleHow()">
+      <div class="how-to-title">📖 How to Use</div>
+      <span class="how-to-chevron" id="howChevron">▼</span>
+    </div>
+    <div class="how-to-body" id="howBody">
+      <div class="how-steps">
+        <div class="how-step">
+          <div class="how-step-icon">📦</div>
+          <div class="how-step-text">
+            <strong>Export from FNMobile</strong>
+            <span>Export your chart as a <code>.fnmm</code> file from the FNMobile chart editor.</span>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-step-icon">📂</div>
+          <div class="how-step-text">
+            <strong>Upload the file</strong>
+            <span>Drag & drop or click to browse for your <code>.fnmm</code> file in Step 1.</span>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-step-icon">⚙️</div>
+          <div class="how-step-text">
+            <strong>Set chart options</strong>
+            <span>Fill in song title, difficulty, scroll speed, and timing offset in Step 2.</span>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-step-icon">⬇️</div>
+          <div class="how-step-text">
+            <strong>Download the JSON</strong>
+            <span>Click Convert then download your V-Slice <code>songname-chart.json</code> file.</span>
+          </div>
+        </div>
+      </div>
+      <div class="how-tip">
+        💡 <strong>Tip:</strong> Place your downloaded JSON in your mod's <code>data/songs/songname/</code> folder. The file must be named exactly <code>songname-chart.json</code> to be recognised by V-Slice.
+      </div>
+    </div>
+  </div>
+
+  <!-- Changelog -->
+  <div class="changelog-card">
+    <div class="changelog-header" onclick="toggleChangelog()">
+      <div class="cl-title">📋 Changelog</div>
+      <span class="how-to-chevron" id="clChevron">▼</span>
+    </div>
+    <div class="cl-body" id="clBody">
+      <div class="cl-version">v1.2.0 <span class="cl-new-badge">LATEST</span></div>
+      <div class="cl-item"><span class="cl-item-dot">+</span>Added dark mode toggle</div>
+      <div class="cl-item"><span class="cl-item-dot">+</span>Added How to Use guide and Changelog section</div>
+      <div class="cl-item"><span class="cl-item-dot">+</span>Added Reset button to clear loaded file</div>
+      <div class="cl-item"><span class="cl-item-dot">+</span>Added Discord credits footer with logo</div>
+      <div style="margin-top:12px" class="cl-version">v1.1.0</div>
+      <div class="cl-item"><span class="cl-item-dot">+</span>Artist field added to chart settings</div>
+      <div class="cl-item"><span class="cl-item-dot">+</span>Lane note distribution bars</div>
+      <div class="cl-item"><span class="cl-item-dot">+</span>Live BPM, note count, duration stats</div>
+      <div style="margin-top:12px" class="cl-version">v1.0.0</div>
+      <div class="cl-item"><span class="cl-item-dot">·</span>Initial release — FNMM → V-Slice conversion</div>
+    </div>
   </div>
 
   <!-- Step 1: Upload -->
@@ -746,6 +1098,9 @@
       <button class="convert-btn" id="convertBtn" onclick="convertChart()" disabled>
         ⚡ Convert to V-Slice Chart JSON
       </button>
+      <div style="display:flex;margin-top:10px;">
+        <button class="reset-btn" onclick="resetAll()">↺ Reset &amp; Load New File</button>
+      </div>
       <div class="error-box" id="errorBox"></div>
     </div>
   </div>
@@ -799,6 +1154,58 @@
   </div>
 
 <script>
+// ── Dark Mode ─────────────────────────────────────────────────────────────────
+const html = document.documentElement;
+const toggleTrack = document.getElementById('toggleTrack');
+const toggleIcon  = document.getElementById('toggleIcon');
+const toggleLabel = document.getElementById('toggleLabel');
+
+let isDark = localStorage.getItem('fnmm-theme') === 'dark';
+applyTheme();
+
+document.getElementById('themeToggle').addEventListener('click', () => {
+  isDark = !isDark;
+  localStorage.setItem('fnmm-theme', isDark ? 'dark' : 'light');
+  applyTheme();
+});
+
+function applyTheme() {
+  html.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  toggleTrack.classList.toggle('on', isDark);
+  toggleIcon.textContent  = isDark ? '☀️' : '🌙';
+  toggleLabel.textContent = isDark ? 'Light' : 'Dark';
+}
+
+// ── Accordions ────────────────────────────────────────────────────────────────
+function toggleHow() {
+  const body    = document.getElementById('howBody');
+  const chevron = document.getElementById('howChevron');
+  const open    = body.classList.toggle('open');
+  chevron.classList.toggle('open', open);
+}
+
+function toggleChangelog() {
+  const body    = document.getElementById('clBody');
+  const chevron = document.getElementById('clChevron');
+  const open    = body.classList.toggle('open');
+  chevron.classList.toggle('open', open);
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+function resetAll() {
+  parsedData = null;
+  outputJSON = null;
+  document.getElementById('fileInput').value          = '';
+  document.getElementById('fileAccepted').classList.remove('show');
+  document.getElementById('infoBar').classList.remove('show');
+  document.getElementById('laneSection').classList.remove('show');
+  document.getElementById('outputSection').classList.remove('show');
+  document.getElementById('convertBtn').disabled = true;
+  document.getElementById('songTitle').value     = '';
+  document.getElementById('songArtist').value    = '';
+  showError('');
+}
+
 // ── State ────────────────────────────────────────────────────────────────────
 let parsedData = null;
 let outputJSON  = null;
