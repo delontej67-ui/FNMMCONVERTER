@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FNMM Chart Converter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #18181f;
+    --border: #2a2a3a;
+    --accent: #ff3d6e;
+    --accent2: #7b2fff;
+    --accent3: #00e5ff;
+    --text: #e8e8f0;
+    --muted: #666680;
+    --green: #00ff88;
+    --yellow: #ffcc00;
+    --left: #ff6b6b;
+    --down: #7bff6b;
+    --up: #6b9fff;
+    --right: #ff6bff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(123,47,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(123,47,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glow-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .glow-orb.a { width: 500px; height: 500px; background: rgba(255,61,110,0.07); top: -100px; left: -100px; }
+  .glow-orb.b { width: 400px; height: 400px; background: rgba(123,47,255,0.08); bottom: -80px; right: -80px; }
+  .glow-orb.c { width: 300px; height: 300px; background: rgba(0,229,255,0.05); top: 50%; left: 50%; transform: translate(-50%,-50%); }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 60px;
+    position: relative;
+  }
+
+  .logo-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    padding: 4px 14px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.2rem, 6vw, 3.8rem);
+    font-weight: 800;
+    line-height: 1.05;
+    margin-bottom: 14px;
+    background: linear-gradient(135deg, #fff 30%, var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  header p {
+    color: var(--muted);
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    line-height: 1.6;
+  }
+
+  /* Drop zone */
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 52px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+
+  .dropzone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,61,110,0.04), rgba(123,47,255,0.04));
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .dropzone:hover, .dropzone.drag-over {
+    border-color: var(--accent);
+    box-shadow: 0 0 30px rgba(255,61,110,0.15);
+  }
+
+  .dropzone:hover::before, .dropzone.drag-over::before { opacity: 1; }
+
+  .dropzone input { display: none; }
+
+  .drop-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    display: block;
+    filter: drop-shadow(0 0 10px rgba(255,61,110,0.4));
+  }
+
+  .dropzone h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+
+  .dropzone p { color: var(--muted); font-size: 12px; }
+
+  .file-accepted {
+    display: none;
+    align-items: center;
+    gap: 14px;
+    background: rgba(0,255,136,0.06);
+    border: 1px solid rgba(0,255,136,0.2);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-top: 16px;
+    font-size: 12px;
+  }
+
+  .file-accepted.show { display: flex; }
+  .file-accepted .fname { color: var(--green); font-weight: 700; }
+  .file-accepted .fmeta { color: var(--muted); }
+
+  /* Config Panel */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .panel-header {
+    padding: 16px 24px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .panel-header .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  .panel-header span {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .panel-body { padding: 24px; }
+
+  /* Format Selector */
+  .format-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .format-card {
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    background: var(--surface2);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .format-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+
+  .format-card.vslice::after { background: linear-gradient(135deg, rgba(0,229,255,0.07), transparent); }
+  .format-card.physics::after { background: linear-gradient(135deg, rgba(255,204,0,0.07), transparent); }
+
+  .format-card.selected.vslice { border-color: var(--accent3); box-shadow: 0 0 20px rgba(0,229,255,0.15); }
+  .format-card.selected.physics { border-color: var(--yellow); box-shadow: 0 0 20px rgba(255,204,0,0.15); }
+  .format-card.selected::after { opacity: 1; }
+
+  .format-card .format-icon { font-size: 28px; margin-bottom: 10px; display: block; }
+  .format-card .format-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .format-card.vslice .format-name { color: var(--accent3); }
+  .format-card.physics .format-name { color: var(--yellow); }
+
+  .format-card .format-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+  .format-card .check {
+    position: absolute;
+    top: 12px; right: 12px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    transition: all 0.2s;
+  }
+  .format-card.selected.vslice .check { background: var(--accent3); border-color: var(--accent3); color: #000; }
+  .format-card.selected.physics .check { background: var(--yellow); border-color: var(--yellow); color: #000; }
+
+  /* Config rows */
+  .config-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .field input, .field select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+  }
+
+  .field input:focus, .field select:focus {
+    border-color: var(--accent2);
+    box-shadow: 0 0 0 3px rgba(123,47,255,0.1);
+  }
+
+  .field select option { background: var(--bg); }
+
+  /* Info cards */
+  .info-bar {
+    display: none;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .info-bar.show { display: grid; }
+
+  .info-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    text-align: center;
+  }
+
+  .info-card .ivalue {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent3), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .info-card .ilabel { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+
+  /* Note lane preview */
+  .lane-preview {
+    display: none;
+    gap: 6px;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+  .lane-preview.show { display: flex; }
+  .lane-preview .lane-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-right: 6px; }
+
+  .lane-bar {
+    height: 8px;
+    border-radius: 4px;
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .lane-bar .fill {
+    height: 100%;
+    border-radius: 4px;
+    position: absolute;
+    left: 0; top: 0;
+    transition: width 0.5s ease;
+  }
+
+  .lane-bar:nth-child(2) .fill { background: var(--left); box-shadow: 0 0 6px var(--left); }
+  .lane-bar:nth-child(3) .fill { background: var(--down); box-shadow: 0 0 6px var(--down); }
+  .lane-bar:nth-child(4) .fill { background: var(--up); box-shadow: 0 0 6px var(--up); }
+  .lane-bar:nth-child(5) .fill { background: var(--right); box-shadow: 0 0 6px var(--right); }
+
+  /* Convert button */
+  .convert-btn {
+    width: 100%;
+    padding: 18px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-family: 'Syne', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+
+  .convert-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .convert-btn:hover::before { opacity: 1; }
+  .convert-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(255,61,110,0.35); }
+  .convert-btn:active { transform: translateY(0); }
+  .convert-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* Output */
+  .output-section { display: none; }
+  .output-section.show { display: block; }
+
+  .output-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-top: 20px;
+  }
+
+  .output-header {
+    padding: 14px 24px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .output-header .title-group {
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .output-header .title { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+
+  .dl-btn {
+    background: rgba(0,255,136,0.1);
+    border: 1px solid rgba(0,255,136,0.3);
+    color: var(--green);
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .dl-btn:hover { background: rgba(0,255,136,0.2); box-shadow: 0 0 15px rgba(0,255,136,0.2); }
+
+  .output-code {
+    padding: 24px;
+    font-size: 11.5px;
+    line-height: 1.7;
+    max-height: 480px;
+    overflow-y: auto;
+    color: var(--muted);
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .output-code::-webkit-scrollbar { width: 6px; height: 6px; }
+  .output-code::-webkit-scrollbar-track { background: var(--surface2); }
+  .output-code::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* JSON syntax colors */
+  .json-key { color: var(--accent3); }
+  .json-str { color: var(--green); }
+  .json-num { color: var(--yellow); }
+  .json-bool { color: var(--accent); }
+
+  /* Error */
+  .error-box {
+    display: none;
+    background: rgba(255,61,110,0.08);
+    border: 1px solid rgba(255,61,110,0.3);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 12px;
+    color: var(--accent);
+    margin-top: 16px;
+  }
+  .error-box.show { display: block; }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 40px 0 0;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+
+  footer span { color: var(--accent); }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .format-grid { grid-template-columns: 1fr; }
+    .config-row { grid-template-columns: 1fr; }
+    .info-bar { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="glow-orb a"></div>
+<div class="glow-orb b"></div>
+<div class="glow-orb c"></div>
+
+<div class="container">
+
+  <header>
+    <div class="logo-badge">🎵 FNF Toolkit</div>
+    <h1>FNMM Chart<br>Converter</h1>
+    <p>Drop your <code>.fnmm</code> file and convert it to VSlice or Physics Engine format</p>
+  </header>
+
+  <!-- Drop Zone -->
+  <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+    <input type="file" id="fileInput" accept=".fnmm">
+    <span class="drop-icon">🎮</span>
+    <h2>Drop your .fnmm file here</h2>
+    <p>or click to browse · Supports FNMobile chart files</p>
+  </div>
+
+  <div class="file-accepted" id="fileAccepted">
+    <span>✓</span>
+    <div>
+      <div class="fname" id="fileName">—</div>
+      <div class="fmeta" id="fileMeta">—</div>
+    </div>
+  </div>
+
+  <!-- Info Cards -->
+  <div class="info-bar" id="infoBar">
+    <div class="info-card"><div class="ivalue" id="iBpm">—</div><div class="ilabel">BPM</div></div>
+    <div class="info-card"><div class="ivalue" id="iNotes">—</div><div class="ilabel">Notes</div></div>
+    <div class="info-card"><div class="ivalue" id="iDuration">—</div><div class="ilabel">Dur (sec)</div></div>
+    <div class="info-card"><div class="ivalue" id="iLanes">—</div><div class="ilabel">Lanes</div></div>
+  </div>
+
+  <!-- Lane Bar -->
+  <div class="lane-preview" id="lanePreview">
+    <div class="lane-label">LANES</div>
+    <div class="lane-bar"><div class="fill" id="laneA"></div></div>
+    <div class="lane-bar"><div class="fill" id="laneB"></div></div>
+    <div class="lane-bar"><div class="fill" id="laneC"></div></div>
+    <div class="lane-bar"><div class="fill" id="laneD"></div></div>
+  </div>
+
+  <!-- Config Panel -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="dot"></div>
+      <span>Output Format</span>
+    </div>
+    <div class="panel-body">
+      <div class="format-grid">
+        <div class="format-card vslice selected" id="cardVslice" onclick="selectFormat('vslice')">
+          <div class="check">✓</div>
+          <span class="format-icon">🌊</span>
+          <div class="format-name">V-Slice / FNF 0.3</div>
+          <div class="format-desc">Modern FNF format · Compatible with the official rewrite engine (HaxeFlixel)</div>
+        </div>
+        <div class="format-card physics" id="cardPhysics" onclick="selectFormat('physics')">
+          <div class="check">✓</div>
+          <span class="format-icon">⚡</span>
+          <div class="format-name">Physics Engine</div>
+          <div class="format-desc">FNF Physics / Psych Engine legacy format · JSON note arrays with ms timing</div>
+        </div>
+      </div>
+
+      <div class="config-row">
+        <div class="field">
+          <label>Song Title</label>
+          <input type="text" id="songTitle" placeholder="e.g. Montagem Boyfriend">
+        </div>
+        <div class="field">
+          <label>Artist / Charter</label>
+          <input type="text" id="songArtist" placeholder="e.g. Unknown">
+        </div>
+      </div>
+      <div class="config-row">
+        <div class="field">
+          <label>Difficulty Tag</label>
+          <select id="diffTag">
+            <option value="easy">Easy</option>
+            <option value="normal" selected>Normal</option>
+            <option value="hard">Hard</option>
+            <option value="erect">Erect</option>
+            <option value="nightmare">Nightmare</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Scroll Speed</label>
+          <input type="number" id="scrollSpeed" value="2.5" step="0.1" min="0.5" max="10">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="convert-btn" id="convertBtn" onclick="convertChart()" disabled>
+    ⚡ Convert & Download JSON
+  </button>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- Output -->
+  <div class="output-section" id="outputSection">
+    <div class="output-panel">
+      <div class="output-header">
+        <div class="title-group">
+          <div class="status-dot"></div>
+          <span class="title" id="outputTitle">OUTPUT — VSLICE</span>
+        </div>
+        <button class="dl-btn" onclick="downloadJSON()">↓ Download JSON</button>
+      </div>
+      <pre class="output-code" id="outputCode"></pre>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <p>FNMM Converter · Built for the FNF community · <span>♥</span> open source</p>
+</footer>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+let parsedData = null;
+let selectedFormat = 'vslice';
+let outputJSON = null;
+
+// ─── Format Selection ─────────────────────────────────────────────────────────
+function selectFormat(fmt) {
+  selectedFormat = fmt;
+  document.getElementById('cardVslice').classList.toggle('selected', fmt === 'vslice');
+  document.getElementById('cardPhysics').classList.toggle('selected', fmt === 'physics');
+  if (parsedData) renderPreviewStats();
+}
+
+// ─── File Handling ────────────────────────────────────────────────────────────
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) loadFile(file);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); });
+
+async function loadFile(file) {
+  showError('');
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const uint8 = new Uint8Array(arrayBuffer);
+
+    // The .fnmm is a ZIP archive — parse it manually using JSZip-like approach
+    // We'll use a lightweight approach: find the data.json file inside the ZIP
+    const dataJson = await extractFileFromZip(uint8, 'data.json');
+    if (!dataJson) throw new Error('No data.json found in .fnmm file. Is this a valid FNMobile chart?');
+
+    parsedData = JSON.parse(dataJson);
+
+    // Validate structure
+    if (!parsedData.strumLines || !parsedData.bpm) {
+      throw new Error('Invalid data.json structure — missing strumLines or bpm.');
+    }
+
+    // Show file info
+    const kb = (file.size / 1024).toFixed(1);
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileMeta').textContent = `${kb} KB · BPM ${parsedData.bpm} · ${countAllNotes(parsedData)} notes`;
+    document.getElementById('fileAccepted').classList.add('show');
+
+    renderPreviewStats();
+    document.getElementById('convertBtn').disabled = false;
+    document.getElementById('outputSection').classList.remove('show');
+
+    // Pre-fill song title from filename
+    const baseName = file.name.replace('.fnmm', '').replace(/_/g, ' ');
+    if (!document.getElementById('songTitle').value)
+      document.getElementById('songTitle').value = baseName;
+
+  } catch (err) {
+    showError('❌ ' + err.message);
+    parsedData = null;
+    document.getElementById('convertBtn').disabled = true;
+  }
+}
+
+// ─── ZIP Parser (pure JS, no library) ────────────────────────────────────────
+async function extractFileFromZip(uint8, targetName) {
+  // Use the browser's built-in DecompressionStream via a trick:
+  // Walk the ZIP local file headers manually
+  const view = new DataView(uint8.buffer);
+  let offset = 0;
+
+  while (offset < uint8.length - 4) {
+    const sig = view.getUint32(offset, true);
+    if (sig !== 0x04034b50) { offset++; continue; }
+
+    const fnLen = view.getUint16(offset + 26, true);
+    const extraLen = view.getUint16(offset + 28, true);
+    const compMethod = view.getUint16(offset + 8, true);
+    const compSize = view.getUint32(offset + 18, true);
+    const uncompSize = view.getUint32(offset + 22, true);
+
+    const fnBytes = uint8.slice(offset + 30, offset + 30 + fnLen);
+    const fileName = new TextDecoder().decode(fnBytes);
+    const dataOffset = offset + 30 + fnLen + extraLen;
+    const compData = uint8.slice(dataOffset, dataOffset + compSize);
+
+    if (fileName === targetName) {
+      if (compMethod === 0) {
+        // Stored (no compression)
+        return new TextDecoder().decode(compData);
+      } else if (compMethod === 8) {
+        // Deflate — use DecompressionStream
+        try {
+          const ds = new DecompressionStream('deflate-raw');
+          const writer = ds.writable.getWriter();
+          const reader = ds.readable.getReader();
+          writer.write(compData);
+          writer.close();
+          const chunks = [];
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+          }
+          const total = chunks.reduce((s, c) => s + c.length, 0);
+          const merged = new Uint8Array(total);
+          let pos = 0;
+          for (const c of chunks) { merged.set(c, pos); pos += c.length; }
+          return new TextDecoder().decode(merged);
+        } catch(e) {
+          throw new Error('Failed to decompress data.json: ' + e.message);
+        }
+      }
+    }
+    offset = dataOffset + compSize;
+  }
+  return null;
+}
+
+// ─── Stats ────────────────────────────────────────────────────────────────────
+function countAllNotes(data) {
+  let total = 0;
+  for (const section of data.strumLines) {
+    for (const lane of section) total += lane.length;
+  }
+  return total;
+}
+
+function renderPreviewStats() {
+  const data = parsedData;
+  const bpm = data.bpm;
+  const totalNotes = countAllNotes(data);
+  const allNotes = getAllNotesFlat(data);
+  const maxTime = allNotes.length ? Math.max(...allNotes.map(n => n.time)) : 0;
+
+  document.getElementById('iBpm').textContent = bpm;
+  document.getElementById('iNotes').textContent = totalNotes;
+  document.getElementById('iDuration').textContent = maxTime.toFixed(1);
+  document.getElementById('iLanes').textContent = data.strumLines[0].length;
+  document.getElementById('infoBar').classList.add('show');
+
+  // Lane distribution bars
+  const perLane = [0, 0, 0, 0];
+  for (const section of data.strumLines) {
+    for (let l = 0; l < Math.min(section.length, 4); l++) perLane[l] += section[l].length;
+  }
+  const maxL = Math.max(...perLane, 1);
+  ['A','B','C','D'].forEach((id, i) => {
+    document.getElementById('lane' + id).style.width = (perLane[i] / maxL * 100) + '%';
+  });
+  document.getElementById('lanePreview').classList.add('show');
+}
+
+// ─── Conversion ────────────────────────────────────────────────────────────────
+function getAllNotesFlat(data) {
+  // strumLines: array of sections, each section is array of 4 lanes (columns 0-3)
+  // Each lane has notes with {start: beats, duration: beats}
+  const bpm = data.bpm;
+  const npb = data.npb || 4; // notes per beat
+  const secPerBeat = 60 / bpm;
+  const secPerNote = secPerBeat / npb;
+
+  const notes = [];
+  for (const section of data.strumLines) {
+    for (let lane = 0; lane < section.length; lane++) {
+      for (const note of section[lane]) {
+        notes.push({
+          time: note.start * secPerNote * 1000, // ms
+          lane: lane, // 0=left,1=down,2=up,3=right
+          duration: note.duration * secPerNote * 1000,
+          skin: note.props?.skin || 0
+        });
+      }
+    }
+  }
+  notes.sort((a, b) => a.time - b.time);
+  return notes;
+}
+
+function convertChart() {
+  if (!parsedData) return;
+
+  const title = document.getElementById('songTitle').value || 'unknown';
+  const artist = document.getElementById('songArtist').value || 'unknown';
+  const diff = document.getElementById('diffTag').value;
+  const speed = parseFloat(document.getElementById('scrollSpeed').value) || 2.5;
+  const notes = getAllNotesFlat(parsedData);
+
+  let result;
+  if (selectedFormat === 'vslice') {
+    result = convertToVSlice(parsedData, notes, title, artist, diff, speed);
+  } else {
+    result = convertToPhysics(parsedData, notes, title, artist, diff, speed);
+  }
+
+  outputJSON = result;
+  const formatted = JSON.stringify(result, null, 2);
+  document.getElementById('outputCode').innerHTML = syntaxHighlight(formatted);
+  document.getElementById('outputTitle').textContent = `OUTPUT — ${selectedFormat.toUpperCase()}`;
+  document.getElementById('outputSection').classList.add('show');
+  document.getElementById('outputSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ─── V-Slice Format ───────────────────────────────────────────────────────────
+function convertToVSlice(data, notes, title, artist, diff, speed) {
+  const bpm = data.bpm;
+  const songId = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+  // Group notes into measures
+  const measures = buildVSliceMeasures(data, bpm);
+
+  return {
+    version: "2.0.0",
+    songName: title,
+    artist: artist,
+    charter: "FNMobile Converter",
+    generatedBy: "FNMM Chart Converter",
+    timeChanges: [{ t: 0, bpm: bpm, n: 4, d: 4, bt: [4, 4, 4, 4] }],
+    looped: false,
+    offsets: { instrumental: 0, altInstrumental: 0, vocals: {} },
+    playData: {
+      characters: {
+        player: "boyfriend",
+        girlfriend: "gf",
+        opponent: "dad"
+      },
+      difficulties: [diff],
+      noteStyle: "funkin",
+      stage: "mainStage",
+      ratings: {},
+      scrollSpeed: { [diff]: speed }
+    },
+    notes: {
+      [diff]: measures
+    },
+    events: []
+  };
+}
+
+function buildVSliceMeasures(data, bpm) {
+  const npb = data.npb || 4;
+  const secPerBeat = 60 / bpm;
+  const secPerNote = secPerBeat / npb;
+  const beatsPerMeasure = 4;
+  const stepsPerMeasure = 16;
+  const secPerMeasure = secPerBeat * beatsPerMeasure;
+
+  const allNotesByLane = {};
+  for (const section of data.strumLines) {
+    for (let lane = 0; lane < section.length; lane++) {
+      if (!allNotesByLane[lane]) allNotesByLane[lane] = [];
+      for (const note of section[lane]) {
+        allNotesByLane[lane].push({
+          time: note.start * secPerNote * 1000,
+          duration: note.duration > 0 ? note.duration * secPerNote * 1000 : 0
+        });
+      }
+    }
+  }
+
+  // Find total measures
+  let maxTime = 0;
+  for (const lane of Object.values(allNotesByLane)) {
+    for (const n of lane) maxTime = Math.max(maxTime, n.time);
+  }
+  const numMeasures = Math.ceil(maxTime / (secPerMeasure * 1000)) + 1;
+
+  const measures = [];
+  for (let m = 0; m < numMeasures; m++) {
+    const measureStart = m * secPerMeasure * 1000;
+    const measureEnd = measureStart + secPerMeasure * 1000;
+    const noteRows = [];
+    const mustHitSection = true; // player section by default
+
+    // 4 lanes: 0-3 = opponent, 4-7 = player in VSlice
+    for (let lane = 0; lane < 4; lane++) {
+      const srcLane = allNotesByLane[lane] || [];
+      for (const note of srcLane) {
+        if (note.time >= measureStart && note.time < measureEnd) {
+          const t = note.time - measureStart;
+          // In FNMobile, lanes 0-3 are one strum line; we split by section parity
+          // strumLines[0] = player (lanes 0-3), strumLines[1] = enemy (lanes 4-7)
+          const direction = lane; // 0=left,1=down,2=up,3=right
+          noteRows.push({ t: Math.round(note.time), d: direction, l: Math.round(note.duration), k: "" });
+        }
+      }
+    }
+
+    if (noteRows.length > 0) {
+      measures.push({ t: Math.round(measureStart), n: noteRows, e: [] });
+    }
+  }
+
+  // Also handle enemy notes (strum line index 1 mapped to directions 4-7)
+  for (let m = 0; m < numMeasures; m++) {
+    const measureStart = m * secPerMeasure * 1000;
+    const findMeasure = measures.find(x => x.t === Math.round(measureStart));
+    for (let sl = 1; sl < data.strumLines[0].length; sl++) {
+      // Already handled above — the loop covers lanes 0-3 from the FIRST section group
+    }
+  }
+
+  return measures;
+}
+
+// ─── Physics / Psych Engine Format ───────────────────────────────────────────
+function convertToPhysics(data, notes, title, artist, diff, speed) {
+  const bpm = data.bpm;
+  const npb = data.npb || 4;
+  const secPerBeat = 60 / bpm;
+  const secPerNote = secPerBeat / npb;
+  const beatsPerSec = bpm / 60;
+  const stepCrochet = (60 / bpm / npb) * 1000;
+
+  // Build sections (16 steps each)
+  const stepsPerSection = 16;
+  const msPerSection = stepCrochet * stepsPerSection;
+
+  // Flatten all notes with ms times + directions
+  const allNotes = [];
+  for (const section of data.strumLines) {
+    for (let lane = 0; lane < section.length; lane++) {
+      for (const note of section[lane]) {
+        const ms = note.start * secPerNote * 1000;
+        const durMs = note.duration > 0 ? note.duration * secPerNote * 1000 : 0;
+        // Determine player vs opponent:
+        // In FNMobile, strumLine[0] = first strum (player), [1] = second (opponent in FNF terms)
+        // FNF Psych: 0-3 = opponent, 4-7 = player
+        // The .fnmm has strumLines[0] with 4 lanes (the section) containing notes for player strums
+        // We'll map first half of lanes to player (4-7) and second to opponent (0-3)
+        const isPlayer = lane < 4; // assume first 4 lanes = player side
+        const dir = lane % 4; // 0=left,1=down,2=up,3=right
+        const fnfLane = isPlayer ? dir + 4 : dir; // Psych format
+        allNotes.push([ms, fnfLane, durMs > 0 ? durMs : 0, false]);
+      }
+    }
+  }
+
+  allNotes.sort((a, b) => a[0] - b[0]);
+
+  // Build sections
+  const maxMs = allNotes.length ? Math.max(...allNotes.map(n => n[0])) : 0;
+  const numSections = Math.ceil(maxMs / msPerSection) + 1;
+  const sections = [];
+
+  for (let s = 0; s < numSections; s++) {
+    const sStart = s * msPerSection;
+    const sEnd = sStart + msPerSection;
+    const sNotes = allNotes.filter(n => n[0] >= sStart && n[0] < sEnd);
+    const mustHitSection = sNotes.some(n => n[1] >= 4); // has player notes
+
+    sections.push({
+      lengthInSteps: stepsPerSection,
+      mustHitSection: mustHitSection,
+      typeOfSection: 0,
+      altAnim: false,
+      sectionNotes: sNotes.map(n => [Math.round(n[0]), n[1], Math.round(n[2])]),
+      changeBPM: false,
+      bpm: bpm
+    });
+  }
+
+  return {
+    song: {
+      song: title,
+      notes: sections,
+      events: [],
+      bpm: bpm,
+      needsVoices: true,
+      speed: speed,
+      player1: "bf",
+      player2: "dad",
+      gfVersion: "gf",
+      stage: "stage",
+      arrowSkin: "",
+      validScore: true
+    }
+  };
+}
+
+// ─── Download ─────────────────────────────────────────────────────────────────
+function downloadJSON() {
+  if (!outputJSON) return;
+  const title = (document.getElementById('songTitle').value || 'chart').toLowerCase().replace(/\s+/g, '-');
+  const diff = document.getElementById('diffTag').value;
+  const fname = `${title}-${diff}-${selectedFormat}.json`;
+  const blob = new Blob([JSON.stringify(outputJSON, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ─── Syntax Highlight ─────────────────────────────────────────────────────────
+function syntaxHighlight(json) {
+  return json
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function(match) {
+      if (/^"/.test(match)) {
+        if (/:$/.test(match)) return `<span class="json-key">${match}</span>`;
+        return `<span class="json-str">${match}</span>`;
+      }
+      if (/true|false/.test(match)) return `<span class="json-bool">${match}</span>`;
+      return `<span class="json-num">${match}</span>`;
+    });
+}
+
+// ─── Error Display ────────────────────────────────────────────────────────────
+function showError(msg) {
+  const el = document.getElementById('errorBox');
+  el.textContent = msg;
+  el.classList.toggle('show', !!msg);
+}
+</script>
+</body>
+</html>
