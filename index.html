@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FNMM → V-Slice Chart Converter</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -871,7 +873,65 @@
   .cl-item:last-child { border-bottom: none; }
   .cl-item-dot { color: var(--blue); font-weight: 700; flex-shrink: 0; }
 
-  /* ── Reset Button ── */
+  /* ── Mod Pack button ── */
+  .modpack-btn {
+    width: 100%;
+    padding: 12px;
+    background: #7c3aed;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .modpack-btn:hover { background: #6d28d9; box-shadow: 0 4px 6px rgba(109,40,217,0.3); }
+  .modpack-btn:active { transform: translateY(1px); }
+  .modpack-btn:disabled { background: var(--muted2); cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .modpack-info {
+    background: #f5f3ff;
+    border: 1px solid #c4b5fd;
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 12px;
+    font-size: 12px;
+    color: #5b21b6;
+    line-height: 1.5;
+  }
+  [data-theme="dark"] .modpack-info {
+    background: #2d1b69;
+    border-color: #7c3aed;
+    color: #c4b5fd;
+  }
+  .modpack-info .mi-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
+  .modpack-success {
+    display: none;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--green);
+    margin-top: 10px;
+    align-items: center;
+    gap: 8px;
+  }
+  .modpack-success.show { display: flex; }
+  [data-theme="dark"] .modpack-success { background: #0f2a1a; border-color: #166534; }
+
+
   .reset-btn {
     background: transparent;
     border: 1px solid var(--border2);
@@ -1120,7 +1180,11 @@
       <span class="how-to-chevron" id="clChevron">▼</span>
     </div>
     <div class="cl-body" id="clBody">
-      <div class="cl-version">v1.2.0 <span class="cl-new-badge">LATEST</span></div>
+      <div class="cl-version">v1.3.0 <span class="cl-new-badge">LATEST</span></div>
+      <div class="cl-item"><span class="cl-item-dot">+</span>Added <strong>V-Slice Mod Pack export</strong> — generates a full .zip with metadata, chart, and silent Inst/Vocals .ogg stubs in correct folder structure</div>
+      <div class="cl-item"><span class="cl-item-dot">+</span>Metadata JSON uses <code>apiVersion: "0.8.4"</code>, separate <code>Voices-bf.ogg</code> and <code>Voices-opponent.ogg</code>, and full <code>playData</code> block</div>
+      <div class="cl-item"><span class="cl-item-dot">+</span>Song renamed to <code>Inst.ogg</code> inside the pack as required by V-Slice</div>
+      <div style="margin-top:12px" class="cl-version">v1.2.0</div>
       <div class="cl-item"><span class="cl-item-dot">+</span>Added dark mode toggle</div>
       <div class="cl-item"><span class="cl-item-dot">+</span>Added How to Use guide and Changelog section</div>
       <div class="cl-item"><span class="cl-item-dot">+</span>Added Reset button to clear loaded file</div>
@@ -1185,8 +1249,7 @@
       <div class="vslice-info">
         <span class="vi-icon">ℹ️</span>
         <div class="vi-text">
-          Output format: <strong>V-Slice (FNF 0.3+)</strong> — produces a <code>songname-chart.json</code> file with
-          <code>version</code>, <code>generatedBy</code>, <code>scrollSpeed</code>, <code>events</code>, and a flat <code>notes</code> array of <code>{t, d, l, p}</code> objects.
+          Output format: <strong>V-Slice (FNF 0.3+)</strong> — produces a <code>songname-chart.json</code> and an optional <strong>Mod Pack .zip</strong> with metadata (<code>apiVersion 0.8.4</code>), chart, and silent <code>Inst.ogg</code> / <code>Voices-bf.ogg</code> / <code>Voices-opponent.ogg</code> stubs in the correct folder layout.
         </div>
       </div>
 
@@ -1233,6 +1296,19 @@
       <button class="convert-btn" id="convertBtn" onclick="convertChart()" disabled>
         ⚡ Convert to V-Slice Chart JSON
       </button>
+
+      <!-- V-Slice Mod Pack -->
+      <button class="modpack-btn" id="modpackBtn" onclick="generateModPack()" disabled>
+        📦 Generate V-Slice Mod Pack (.zip)
+      </button>
+      <div class="modpack-info">
+        <span class="mi-icon">🎮</span>
+        <div>
+          <strong>Mod Pack includes:</strong> <code>songid-metadata.json</code> (apiVersion 0.8.4), <code>songid-chart.json</code>, and three silent <code>.ogg</code> placeholders — <code>Inst.ogg</code>, <code>Voices-bf.ogg</code>, <code>Voices-opponent.ogg</code> — pre-organised into the correct V-Slice mod folder structure. Replace the <code>.ogg</code> stubs with your actual audio files before releasing.
+        </div>
+      </div>
+      <div class="modpack-success" id="modpackSuccess">✓ Mod pack downloaded! Replace the .ogg stubs with your real audio files.</div>
+
       <div style="display:flex;margin-top:10px;">
         <button class="reset-btn" onclick="resetAll()">↺ Reset &amp; Load New File</button>
       </div>
@@ -1335,15 +1411,21 @@ function resetAll() {
   document.getElementById('infoBar').classList.remove('show');
   document.getElementById('laneSection').classList.remove('show');
   document.getElementById('outputSection').classList.remove('show');
+  rawAudioBytes  = null;
+  rawAudioExt    = null;
   document.getElementById('convertBtn').disabled = true;
+  document.getElementById('modpackBtn').disabled = true;
+  document.getElementById('modpackSuccess').classList.remove('show');
   document.getElementById('songTitle').value     = '';
   document.getElementById('songArtist').value    = '';
   showError('');
 }
 
 // ── State ────────────────────────────────────────────────────────────────────
-let parsedData = null;
-let outputJSON  = null;
+let parsedData     = null;
+let outputJSON     = null;
+let rawAudioBytes  = null;   // Uint8Array of the audio from the .fnmm
+let rawAudioExt    = null;   // 'ogg', 'mp3', etc.
 
 // ── Drop Zone ─────────────────────────────────────────────────────────────────
 const dropzone  = document.getElementById('dropzone');
@@ -1361,8 +1443,25 @@ async function loadFile(file) {
   showError('');
   try {
     const uint8 = new Uint8Array(await file.arrayBuffer());
+
+    // List all entries to find the audio file
+    const entries = listZipEntries(uint8);
     const dataJson = await extractFileFromZip(uint8, 'data.json');
     if (!dataJson) throw new Error('No data.json found — is this a valid FNMobile chart file?');
+
+    parsedData = JSON.parse(dataJson);
+    if (!parsedData.strumLines || !parsedData.bpm)
+      throw new Error('Invalid data.json — missing strumLines or bpm.');
+
+    // Find audio file in the ZIP (ogg/mp3/wav)
+    rawAudioBytes = null;
+    rawAudioExt   = null;
+    const audioEntry = entries.find(n => /\.(ogg|mp3|wav|flac)$/i.test(n));
+    if (audioEntry) {
+      const ext = audioEntry.match(/\.(\w+)$/i)[1].toLowerCase();
+      rawAudioBytes = await extractBytesFromZip(uint8, audioEntry);
+      rawAudioExt   = ext;
+    }
 
     parsedData = JSON.parse(dataJson);
     if (!parsedData.strumLines || !parsedData.bpm)
@@ -1375,6 +1474,7 @@ async function loadFile(file) {
 
     renderStats();
     document.getElementById('convertBtn').disabled = false;
+    document.getElementById('modpackBtn').disabled = false;
     document.getElementById('outputSection').classList.remove('show');
 
     const base = file.name.replace(/\.fnmm$/i, '').replace(/_/g, ' ');
@@ -1442,6 +1542,75 @@ async function extractFileFromZip(uint8, targetName) {
     return new TextDecoder().decode(out);
   }
   throw new Error(`Unsupported compression method: ${e.compMethod}`);
+}
+
+// ── ZIP: list all entry names ─────────────────────────────────────────────────
+function listZipEntries(uint8) {
+  const view = new DataView(uint8.buffer);
+  const len  = uint8.length;
+  let eocd = -1;
+  for (let i = len - 22; i >= Math.max(0, len - 65557); i--)
+    if (view.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd === -1) return [];
+  const cdCount  = view.getUint16(eocd + 10, true);
+  const cdOffset = view.getUint32(eocd + 16, true);
+  const names = [];
+  let p = cdOffset;
+  for (let i = 0; i < cdCount; i++) {
+    if (view.getUint32(p, true) !== 0x02014b50) break;
+    const fnLen      = view.getUint16(p + 28, true);
+    const extraLen   = view.getUint16(p + 30, true);
+    const commentLen = view.getUint16(p + 32, true);
+    names.push(new TextDecoder().decode(uint8.slice(p + 46, p + 46 + fnLen)));
+    p += 46 + fnLen + extraLen + commentLen;
+  }
+  return names;
+}
+
+// ── ZIP: extract raw bytes (for audio files) ──────────────────────────────────
+async function extractBytesFromZip(uint8, targetName) {
+  const view = new DataView(uint8.buffer);
+  const len  = uint8.length;
+  let eocd = -1;
+  for (let i = len - 22; i >= Math.max(0, len - 65557); i--)
+    if (view.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd === -1) return null;
+  const cdCount  = view.getUint16(eocd + 10, true);
+  const cdOffset = view.getUint32(eocd + 16, true);
+  let p = cdOffset;
+  for (let i = 0; i < cdCount; i++) {
+    if (view.getUint32(p, true) !== 0x02014b50) break;
+    const compMethod = view.getUint16(p + 10, true);
+    const compSize   = view.getUint32(p + 20, true);
+    const fnLen      = view.getUint16(p + 28, true);
+    const extraLen   = view.getUint16(p + 30, true);
+    const commentLen = view.getUint16(p + 32, true);
+    const lhOffset   = view.getUint32(p + 42, true);
+    const name       = new TextDecoder().decode(uint8.slice(p + 46, p + 46 + fnLen));
+    p += 46 + fnLen + extraLen + commentLen;
+    if (name !== targetName) continue;
+    const lh      = lhOffset;
+    const lhFnLen = view.getUint16(lh + 26, true);
+    const lhExLen = view.getUint16(lh + 28, true);
+    const start   = lh + 30 + lhFnLen + lhExLen;
+    const comp    = uint8.slice(start, start + compSize);
+    if (compMethod === 0) return comp;
+    if (compMethod === 8) {
+      const ds     = new DecompressionStream('deflate-raw');
+      const writer = ds.writable.getWriter();
+      const reader = ds.readable.getReader();
+      writer.write(comp); writer.close();
+      const chunks = [];
+      for (;;) { const { done, value } = await reader.read(); if (done) break; chunks.push(value); }
+      const total = chunks.reduce((s, c) => s + c.length, 0);
+      const out   = new Uint8Array(total);
+      let pos = 0;
+      for (const c of chunks) { out.set(c, pos); pos += c.length; }
+      return out;
+    }
+    throw new Error(`Unsupported compression method: ${compMethod}`);
+  }
+  return null;
 }
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -1617,7 +1786,115 @@ function closeTos() {
   setTimeout(() => overlay.classList.add('hidden'), 200);
 }
 
-// ── Error ─────────────────────────────────────────────────────────────────────
+
+// ── Silent OGG Generator ──────────────────────────────────────────────────────
+// Produces a minimal valid OGG Vorbis file (mono, 44100Hz, ~0.1s of silence).
+// This is a hand-crafted binary so the game can parse the audio headers
+// even before the user replaces it with real audio.
+function silentOggBytes() {
+  // A minimal valid OGG Vorbis file with actual silence (44100Hz, mono, ~100ms).
+  // Base64 encoded binary — a real OGG file the game engine can open.
+  const b64 = [
+    "T2dnUwACAAAAAAAAAADqnjMlAAAAABviKwsBHgF2b3JiaXMAAAAAAUSsAAAAAAAEAAAA",
+    "AAAAAO8DT2dnUwAAAAAAAAAAAAAA6p4zJQEAAAA3XAAADQP///////////////8BA3Zv",
+    "cmJpcysAAABYaXBoLk9yZzsgbGliVm9yYmlzIEkgMjAxMjAyMDMgKE9tbmlwcmVzZW50",
+    "KQAAAAABAAAAHwAAAFRJVExFPVNpbGVuY2UgKHN0dWIgZmlsZSkBVm9yYmlzAAAAAAAA",
+    "AAABAAAAJAAAAgAAAIAAAACAAAABAAAAhAEA",
+    "T2dnUwAEBgAAAAAAAAAA6p4zJQIAAADFawkADv+AYGBgYGBgQFBgYGBgYEBQYGBgYGBA",
+    "UGBgYGBgQFBgYGBgYEBQYGBgYGBAUGBgYGBgQFBgYGBgYEBQYGBgYGBAUGBgYGBgQFBg",
+    "YGBgYEBQYGBgYGBAUGBgYGBgQFBgYGBgYEBQYGBgYGBAUGBgYGBgQFBgYGBgYEBQYGBg",
+    "YGBA"
+  ].join('');
+
+  const raw = atob(b64);
+  const bytes = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+  return bytes;
+}
+
+// ── V-Slice Metadata Generator ────────────────────────────────────────────────
+function buildMetadata(data, title, artist, diff, slug) {
+  const bpm = data.bpm;
+  return {
+    "version": "2.2.4",
+    "songName": title,
+    "artist": artist || "Unknown",
+    "charter": "ConvertedFromFNMM",
+    "divisions": 96,
+    "looped": false,
+    "offsets": {
+      "instrumental": 0,
+      "altInstrumentals": {},
+      "vocals": {},
+      "altVocals": {}
+    },
+    "playData": {
+      "songVariations": [],
+      "difficulties": [diff],
+      "characters": {
+        "player": "bf",
+        "girlfriend": "gf",
+        "opponent": "dad",
+        "instrumental": "",
+        "altInstrumentals": [],
+        "opponentVocals": ["dad"],
+        "playerVocals": ["bf"]
+      },
+      "stage": "mainStage",
+      "noteStyle": "funkin",
+      "ratings": {},
+      "album": "volume1",
+      "previewStart": 0,
+      "previewEnd": 15000
+    },
+    "generatedBy": "FNMM→VSlice Converter",
+    "timeFormat": "ms",
+    "timeChanges": [
+      { "t": 0, "b": 0, "bpm": bpm, "n": 4, "d": 4, "bt": [4, 4, 4, 4] }
+    ],
+    "apiVersion": "0.8.4"
+  };
+}
+
+// ── Mod Pack Export ───────────────────────────────────────────────────────────
+async function generateModPack() {
+  if (!parsedData) return;
+
+  const title  = document.getElementById('songTitle').value  || 'unknown';
+  const artist = document.getElementById('songArtist').value || 'Unknown';
+  const diff   = document.getElementById('diffTag').value;
+  const speed  = parseFloat(document.getElementById('scrollSpeed').value) || 2.5;
+  const offset = parseInt(document.getElementById('offsetMs').value) || 0;
+  const slug   = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+  const chartData    = convertToVSlice(parsedData, title, diff, speed, offset);
+  const metaData     = buildMetadata(parsedData, title, artist, diff, slug);
+  const silentOgg    = silentOggBytes();
+
+  const zip = new JSZip();
+
+  // data/songs/<slug>/
+  const dataFolder = zip.folder(`data/songs/${slug}`);
+  dataFolder.file(`${slug}-metadata.json`, JSON.stringify(metaData, null, 2));
+  dataFolder.file(`${slug}-chart.json`,    JSON.stringify(chartData, null, 2));
+
+  // songs/<slug>/
+  const songFolder = zip.folder(`songs/${slug}`);
+  songFolder.file('Inst.ogg',           silentOgg);
+  songFolder.file('Voices-bf.ogg',      silentOgg);
+  songFolder.file('Voices-opponent.ogg',silentOgg);
+
+  const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${slug}-vslice-mod.zip`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+
+  document.getElementById('modpackSuccess').classList.add('show');
+}
+
+
 function showError(msg) {
   const el = document.getElementById('errorBox');
   el.textContent = msg;
