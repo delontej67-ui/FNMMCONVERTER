@@ -617,7 +617,7 @@
         </div>
       </div>
       <div class="how-tip">
-        💡 <strong>Tip:</strong> Place your downloaded JSON in your mod's <code>data/songs/songname/</code> folder. The file must be named exactly <code>songname-chart.json</code> to be recognised by V-Slice. If your chart has notes beyond lane 4, enable <strong>Dual-Player Split</strong> in Step 2 to assign lanes 5–8 to Player 2.
+        💡 <strong>Tip:</strong> Place your downloaded JSON in your mod's <code>data/songs/songname/</code> folder. The file must be named exactly <code>songname-chart.json</code> to be recognised by V-Slice. Player vs. opponent assignment is detected automatically from the <code>scene.json</code> inside your <code>.fnmm</code> file.
       </div>
     </div>
   </div>
@@ -629,13 +629,13 @@
       <span class="how-to-chevron" id="clChevron">▼</span>
     </div>
     <div class="cl-body" id="clBody">
-      <div class="cl-version">v1.3.0 <span class="cl-new-badge">LATEST</span></div>
-      <div class="cl-item"><span class="cl-item-dot">+</span>Conversion stats panel (taps vs holds, hold time, first/last note)</div>
-      <div class="cl-item"><span class="cl-item-dot">+</span>Note preview table — inspect first 15 notes before downloading</div>
-      <div class="cl-item"><span class="cl-item-dot">+</span>Smart warnings — extreme offset, zero-note output, large hold notes</div>
-      <div class="cl-item"><span class="cl-item-dot">+</span>Dual-player lane split option (lanes 1–4 = P1, lanes 5–8 = P2)</div>
-      <div class="cl-item"><span class="cl-item-dot">+</span>Fixed <code>p</code> field: now correctly outputs <code>{}</code> instead of <code>[]</code></div>
-      <div class="cl-item"><span class="cl-item-dot">+</span>BPM change detection warning for charts with tempo events</div>
+      <div class="cl-version">v1.4.0 <span class="cl-new-badge">LATEST</span></div>
+      <div class="cl-item"><span class="cl-item-dot">+</span>Auto player/opponent detection — reads <code>scene.json</code> to assign <code>p</code> correctly per character</div>
+      <div class="cl-item"><span class="cl-item-dot">+</span>Character info panel shown after file load (who is player, who is opponent)</div>
+      <div class="cl-item"><span class="cl-item-dot">-</span>Removed manual "Dual-Player Lane Split" toggle — assignment is now automatic</div>
+      <div style="margin-top:12px" class="cl-version">v1.3.0</div>
+      <div class="cl-item"><span class="cl-item-dot">+</span>Conversion stats panel, note preview table, smart warnings</div>
+      <div class="cl-item"><span class="cl-item-dot">+</span>Fixed <code>p</code> field, BPM change detection</div>
       <div style="margin-top:12px" class="cl-version">v1.2.0</div>
       <div class="cl-item"><span class="cl-item-dot">+</span>Dark mode toggle, How to Use guide, Changelog, Reset button</div>
       <div style="margin-top:12px" class="cl-version">v1.1.0</div>
@@ -736,16 +736,10 @@
         </div>
       </div>
 
-      <!-- NEW: Dual-player lane split toggle -->
-      <div style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px;">
-        <div class="toggle-row">
-          <label class="sw">
-            <input type="checkbox" id="dualPlayerToggle">
-            <span class="sw-slider"></span>
-          </label>
-          <label for="dualPlayerToggle" style="cursor:pointer;">Dual-Player Lane Split</label>
-          <span class="toggle-hint">— lanes 1–4 → Player 1, lanes 5–8 → Player 2 (sets <code>p: 1</code>)</span>
-        </div>
+      <!-- Auto-detected character assignment -->
+      <div id="charInfoWrap" style="display:none; border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px;">
+        <div class="lane-section-label" style="margin-bottom:8px;">Detected Characters (from scene.json)</div>
+        <div id="charInfoList" style="display:flex; flex-direction:column; gap:6px;"></div>
       </div>
     </div>
   </div>
@@ -883,14 +877,15 @@ function toggleChangelog() {
 }
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let parsedData = null;
+let parsedData  = null;
+let parsedScene = null;   // scene.json — character → strumLine mapping
 let outputJSON  = null;
 let previewNotesAll = [];
 let previewExpanded = false;
 
 // ── Reset ─────────────────────────────────────────────────────────────────────
 function resetAll() {
-  parsedData = null; outputJSON = null; previewNotesAll = []; previewExpanded = false;
+  parsedData = null; parsedScene = null; outputJSON = null; previewNotesAll = []; previewExpanded = false;
   document.getElementById('fileInput').value = '';
   document.getElementById('fileAccepted').classList.remove('show');
   document.getElementById('infoBar').classList.remove('show');
@@ -903,6 +898,8 @@ function resetAll() {
   document.getElementById('songArtist').value = '';
   document.getElementById('fileWarnList').innerHTML = '';
   document.getElementById('fileWarnList').classList.remove('show');
+  document.getElementById('charInfoWrap').style.display = 'none';
+  document.getElementById('charInfoList').innerHTML = '';
   showError('');
 }
 
@@ -922,6 +919,7 @@ async function loadFile(file) {
   showError('');
   document.getElementById('fileWarnList').innerHTML = '';
   document.getElementById('fileWarnList').classList.remove('show');
+  document.getElementById('charInfoWrap').style.display = 'none';
   try {
     const uint8 = new Uint8Array(await file.arrayBuffer());
     const dataJson = await extractFileFromZip(uint8, 'data.json');
@@ -931,11 +929,16 @@ async function loadFile(file) {
     if (!parsedData.strumLines || !parsedData.bpm)
       throw new Error('Invalid data.json — missing strumLines or bpm.');
 
+    // Try to load scene.json for player/opponent detection
+    const sceneJson = await extractFileFromZip(uint8, 'scene.json');
+    parsedScene = sceneJson ? JSON.parse(sceneJson) : null;
+
     const kb = (file.size / 1024).toFixed(1);
     document.getElementById('fileName').textContent = file.name;
     document.getElementById('fileMeta').textContent = `${kb} KB · BPM ${parsedData.bpm} · ${countAllNotes(parsedData)} notes`;
     document.getElementById('fileAccepted').classList.add('show');
 
+    renderCharInfo();
     renderFileWarnings();
     renderStats();
     document.getElementById('convertBtn').disabled = false;
@@ -947,9 +950,85 @@ async function loadFile(file) {
 
   } catch(err) {
     showError('❌ ' + err.message);
-    parsedData = null;
+    parsedData = null; parsedScene = null;
     document.getElementById('convertBtn').disabled = true;
   }
+}
+
+// ── Character Assignment (from scene.json) ────────────────────────────────────
+// Returns an array indexed by strumLine index: { spr, role }
+// role is 'player', 'opponent', or 'unknown'
+function getCharAssignments() {
+  const count = parsedData.strumLines.length;
+  const assignments = Array.from({ length: count }, (_, i) => ({ spr: null, role: 'unknown', strumLine: i }));
+
+  if (!parsedScene || !Array.isArray(parsedScene.objects)) return assignments;
+
+  for (const obj of parsedScene.objects) {
+    const idx = Math.round(obj.strumLine);
+    if (idx < 0 || idx >= count) continue;
+    assignments[idx].spr = obj.spr || null;
+    // Heuristic: sprite named 'player' or 'bf' → player (p=0), anything else → opponent (p=1)
+    // FNMobile consistently uses 'player' and 'enemy' but we handle variants
+    const sprLower = (obj.spr || '').toLowerCase();
+    if (sprLower === 'player' || sprLower === 'bf' || sprLower.includes('boyfriend')) {
+      assignments[idx].role = 'player';
+    } else if (sprLower === 'enemy' || sprLower === 'opponent' || sprLower === 'dad' || sprLower === 'gf') {
+      assignments[idx].role = 'opponent';
+    } else if (idx === 0) {
+      // Fallback: strumLine 0 is conventionally the player in FNMM
+      assignments[idx].role = 'player';
+    } else {
+      assignments[idx].role = 'opponent';
+    }
+  }
+
+  // If scene.json had no objects with strumLines at all, use index convention
+  const anyAssigned = assignments.some(a => a.spr !== null);
+  if (!anyAssigned) {
+    if (assignments[0]) assignments[0].role = 'player';
+    for (let i = 1; i < assignments.length; i++) assignments[i].role = 'opponent';
+  }
+
+  return assignments;
+}
+
+function renderCharInfo() {
+  const wrap = document.getElementById('charInfoWrap');
+  const list = document.getElementById('charInfoList');
+
+  if (!parsedScene) {
+    // No scene.json — show fallback notice
+    list.innerHTML = `<div class="warn-item" style="background:var(--amber-bg);border-color:var(--amber-bdr);">
+      <span class="wi">⚠️</span>
+      <span>No <code>scene.json</code> found. Falling back to convention: strumLine 0 = Player, all others = Opponent.</span>
+    </div>`;
+    wrap.style.display = '';
+    return;
+  }
+
+  const assignments = getCharAssignments();
+  const ROLE_STYLES = {
+    player:   { bg: 'var(--green-bg)',  bdr: 'var(--green-bdr)',  color: 'var(--green)',  icon: '🎮', label: 'Player (p: 0)' },
+    opponent: { bg: 'var(--red-bg)',    bdr: 'var(--red-bdr)',    color: 'var(--red)',    icon: '🤖', label: 'Opponent (p: 1)' },
+    unknown:  { bg: 'var(--amber-bg)',  bdr: 'var(--amber-bdr)',  color: 'var(--amber)',  icon: '❓', label: 'Unknown' },
+  };
+
+  list.innerHTML = assignments.map(a => {
+    const s = ROLE_STYLES[a.role];
+    const noteCount = parsedData.strumLines[a.strumLine]
+      ? parsedData.strumLines[a.strumLine].reduce((sum, lane) => sum + lane.length, 0)
+      : 0;
+    return `<div style="display:flex;align-items:center;gap:10px;background:${s.bg};border:1px solid ${s.bdr};border-radius:7px;padding:9px 12px;">
+      <span style="font-size:16px;flex-shrink:0;">${s.icon}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:600;color:${s.color};">${s.label}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:1px;">strumLine ${a.strumLine} · sprite: <code>${a.spr || 'none'}</code> · ${noteCount} note${noteCount !== 1 ? 's' : ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  wrap.style.display = '';
 }
 
 // ── Warnings from file parse ───────────────────────────────────────────────────
@@ -960,12 +1039,6 @@ function renderFileWarnings() {
   // BPM changes detection
   if (data.bpmChanges && Array.isArray(data.bpmChanges) && data.bpmChanges.length > 0) {
     warns.push('⚠️ This chart contains BPM changes (' + data.bpmChanges.length + ' event' + (data.bpmChanges.length > 1 ? 's' : '') + '). The converter uses only the base BPM (' + data.bpm + '). Notes after a BPM change may be slightly off — review timing carefully.');
-  }
-
-  // Large lane count
-  const laneCount = data.strumLines[0] ? data.strumLines[0].length : 0;
-  if (laneCount > 4) {
-    warns.push('ℹ️ Chart has ' + laneCount + ' lanes (more than 4). Enable "Dual-Player Lane Split" in Step 2 to assign the extra lanes to Player 2, otherwise they will all map to directions 0–3 with mod 4.');
   }
 
   // Very short chart
@@ -1079,16 +1152,14 @@ function renderStats() {
 // ── Convert ───────────────────────────────────────────────────────────────────
 function convertChart() {
   if (!parsedData) return;
-  const title      = document.getElementById('songTitle').value   || 'unknown';
-  const diff       = document.getElementById('diffTag').value;
-  const speed      = parseFloat(document.getElementById('scrollSpeed').value) || 2.5;
-  const offset     = parseInt(document.getElementById('offsetMs').value)      || 0;
-  const dualPlayer = document.getElementById('dualPlayerToggle').checked;
+  const title  = document.getElementById('songTitle').value   || 'unknown';
+  const diff   = document.getElementById('diffTag').value;
+  const speed  = parseFloat(document.getElementById('scrollSpeed').value) || 2.5;
+  const offset = parseInt(document.getElementById('offsetMs').value)      || 0;
 
-  // Conversion warnings
+  // Conversion warnings (offset check)
   const convWarns = getConversionWarnings(offset);
   const warnList = document.getElementById('fileWarnList');
-  const existingWarnCount = warnList.children.length;
   if (convWarns.length) {
     convWarns.forEach(w => {
       const div = document.createElement('div');
@@ -1099,12 +1170,11 @@ function convertChart() {
     warnList.classList.add('show');
   }
 
-  const result = convertToVSlice(parsedData, title, diff, speed, offset, dualPlayer);
+  const result = convertToVSlice(parsedData, title, diff, speed, offset);
   outputJSON   = result;
 
   const notes     = result.notes[diff];
   const holdNotes = notes.filter(n => n.l > 0);
-  const totalHoldMs = holdNotes.reduce((s, n) => s + n.l, 0);
   const firstNoteMs = notes.length ? notes[0].t : 0;
   const lastNoteMs  = notes.length ? notes[notes.length - 1].t : 0;
   const p2Notes     = notes.filter(n => n.p === 1);
@@ -1112,7 +1182,7 @@ function convertChart() {
   const slug  = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
   const fname = `${slug}-chart.json`;
 
-  document.getElementById('outFileName').textContent  = fname;
+  document.getElementById('outFileName').textContent = fname;
 
   // Conversion stats
   document.getElementById('csTotal').textContent    = notes.length;
@@ -1122,7 +1192,7 @@ function convertChart() {
   document.getElementById('convStats').classList.add('show');
 
   // P2 meta
-  if (dualPlayer && p2Notes.length > 0) {
+  if (p2Notes.length > 0) {
     document.getElementById('outP2Count').textContent = p2Notes.length;
     document.getElementById('outP2Meta').style.display = '';
   } else {
@@ -1173,23 +1243,26 @@ function togglePreviewRows() {
 }
 
 // ── V-Slice Conversion ────────────────────────────────────────────────────────
-function convertToVSlice(data, title, diff, speed, offsetMs, dualPlayer) {
+function convertToVSlice(data, title, diff, speed, offsetMs) {
   const npb = data.npb || 4;
   const spn = (60 / data.bpm) / npb;
 
+  // Resolve player/opponent assignment from scene.json (or fall back to convention)
+  const assignments = getCharAssignments();
+
   const flatNotes = [];
-  for (const sec of data.strumLines) {
-    for (let lane = 0; lane < sec.length; lane++) {
-      const dir    = lane % 4;
-      // In dual-player mode: lanes >= 4 are player 2 (p: 1), others are player 1 (p: 0)
-      const player = dualPlayer && lane >= 4 ? 1 : 0;
-      for (const note of sec[lane]) {
+  for (let strumIdx = 0; strumIdx < data.strumLines.length; strumIdx++) {
+    const lanes      = data.strumLines[strumIdx];
+    const assignment = assignments[strumIdx] || { role: 'opponent' };
+    // p=0 means player must hit (Boyfriend), p=1 means opponent/CPU auto-hits
+    const pVal = assignment.role === 'player' ? 0 : 1;
+
+    for (let dir = 0; dir < lanes.length; dir++) {
+      for (const note of lanes[dir]) {
         const t = Math.round(note.start * spn * 1000) + offsetMs;
         const l = note.duration > 0 ? Math.round(note.duration * spn * 1000) : 0;
-        // FIX: p should be a plain object {}, not an array []
-        // When player is 0 (default), omit it to keep output clean; set it for P2
-        const noteObj = { t, d: dir, l };
-        if (player === 1) noteObj.p = 1;
+        const noteObj = { t, d: dir % 4, l };
+        if (pVal === 1) noteObj.p = 1;
         flatNotes.push(noteObj);
       }
     }
@@ -1197,12 +1270,12 @@ function convertToVSlice(data, title, diff, speed, offsetMs, dualPlayer) {
   flatNotes.sort((a, b) => a.t - b.t || a.d - b.d);
 
   const artist = document.getElementById('songArtist').value || '';
-  const meta   = artist ? { title, artist } : { title };
+  const meta   = { title, ...(artist ? { artist } : {}) };
 
   return {
     version:     "2.0.0",
     generatedBy: "ConvertedFromFNMM",
-    ...( artist ? { meta } : {} ),
+    meta,
     scrollSpeed: { [diff]: speed },
     events:      [{ t: 0, e: "FocusCamera", v: { char: 0 } }],
     notes:       { [diff]: flatNotes }
